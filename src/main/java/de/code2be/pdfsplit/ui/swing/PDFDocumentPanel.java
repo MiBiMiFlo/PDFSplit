@@ -140,7 +140,7 @@ public class PDFDocumentPanel extends JPanel
 
     public void saveAs(File aFile)
     {
-        mFile = aFile;
+        setFile(aFile);
         save();
     }
 

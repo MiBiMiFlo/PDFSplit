@@ -191,6 +191,7 @@ public class PDFSplitFrame extends JFrame
         toolBar.addSeparator();
         toolBar.add(new SaveAction(this));
         toolBar.add(new SaveAllAction(this));
+        toolBar.add(new SaveAsAction(this));
         toolBar.add(new RenameAction(this));
         toolBar.addSeparator();
         toolBar.add(new ZoomInAction(this));
@@ -402,7 +403,13 @@ public class PDFSplitFrame extends JFrame
                     new File(mPDFFile.getParent(), fileName));
             pnl.setPreviewSize(getPreviewSize());
             pnl.addPropertyChangeListener("name", (aEvt) -> {
-                mDocsPane.setTitleAt(id - 1, aEvt.getNewValue().toString());
+                for (int i = 0; i < mDocsPane.getTabCount(); i++)
+                {
+                    if (mDocsPane.getComponent(i) == aEvt.getSource())
+                    {
+                        mDocsPane.setTitleAt(i, aEvt.getNewValue().toString());
+                    }
+                }
             });
 
             SwingUtilities.invokeLater(() -> {
