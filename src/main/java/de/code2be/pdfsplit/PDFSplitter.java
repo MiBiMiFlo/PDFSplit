@@ -1,9 +1,5 @@
 package de.code2be.pdfsplit;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.event.ActionEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -12,19 +8,12 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.JButton;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
 import javax.swing.UIManager;
-import javax.swing.filechooser.FileFilter;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
+
+import de.code2be.pdfsplit.ui.swing.PDFSplitFrame;
 
 public class PDFSplitter
 {
@@ -81,10 +70,10 @@ public class PDFSplitter
 
     public static void main(String[] args) throws Exception
     {
-        loadSettings();
 
         if (args.length > 0)
         {
+            loadSettings();
             File input = new File(args[0]);
             if (args.length > 1)
             {
@@ -138,14 +127,6 @@ public class PDFSplitter
 
     private static JFrame mFrame;
 
-    private static JButton mButtonOpen;
-
-    private static JButton mButtonSplit;
-
-    private static JLabel mLblFilename;
-
-    private static JTextField mSplitText;
-
     protected static void showFrame()
     {
         try
@@ -157,100 +138,8 @@ public class PDFSplitter
             ex.printStackTrace();
         }
 
-        mFrame = new JFrame("PDFSplit");
-        mFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        JPanel mainPnl = new JPanel(new BorderLayout());
-        JPanel pnlButton = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        mButtonOpen = new JButton(new ActionOpen());
-        pnlButton.add(new JLabel("SplitText: "));
-        pnlButton.add(mSplitText = new JTextField(mSeparator));
-        pnlButton.add(mButtonOpen);
-        mainPnl.add(pnlButton, BorderLayout.CENTER);
-        mFrame.setContentPane(mainPnl);
-        mFrame.setMinimumSize(new Dimension(400, 300));
-        mFrame.setLocationByPlatform(true);
-        mFrame.pack();
+        mFrame = new PDFSplitFrame();
         mFrame.setVisible(true);
-    }
-
-    private static class ActionOpen extends AbstractAction
-    {
-
-        private static final long serialVersionUID = 139453373914591276L;
-
-        public ActionOpen()
-        {
-            putValue(Action.NAME, "Split");
-        }
-
-
-        @Override
-        public void actionPerformed(ActionEvent aE)
-        {
-            JFileChooser chooser = new JFileChooser();
-            chooser.setFileFilter(new FileFilter()
-            {
-
-                @Override
-                public String getDescription()
-                {
-                    return "*.pdf - PDF Files";
-                }
-
-
-                @Override
-                public boolean accept(File aF)
-                {
-                    return aF.isDirectory()
-                            || aF.getName().toLowerCase().endsWith(".pdf");
-                }
-            });
-            if (mDirectory != null)
-            {
-                chooser.setCurrentDirectory(mDirectory);
-            }
-            if (chooser.showOpenDialog(mFrame) != JFileChooser.APPROVE_OPTION)
-            {
-                return;
-            }
-
-            File f = chooser.getSelectedFile();
-            if (f == null)
-            {
-                return;
-            }
-            File dir = f.getParentFile();
-            mDirectory = dir;
-            Thread t = new Thread(new Runnable()
-            {
-
-                @Override
-                public void run()
-                {
-                    int count = 0;
-                    try
-                    {
-                        count = performSplit(f, mSplitText.getText(),
-                                f.getParentFile());
-                    }
-                    catch (Exception ex)
-                    {
-                        JOptionPane.showMessageDialog(mFrame, ex.getMessage(),
-                                "ERROR!", JOptionPane.ERROR_MESSAGE);
-                        ex.printStackTrace();
-                    }
-                    finally
-                    {
-                        JOptionPane.showMessageDialog(mFrame,
-                                "All done, created " + count + " documents!");
-                    }
-                }
-            });
-            t.start();
-
-        }
-
     }
 
 }

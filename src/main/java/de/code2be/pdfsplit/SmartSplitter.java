@@ -3,9 +3,8 @@ package de.code2be.pdfsplit;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
@@ -21,26 +20,111 @@ import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDDe
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
 import org.apache.pdfbox.text.PDFTextStripper;
 
+/**
+ * This is an adapted version of the
+ * #{@link org.apache.pdfbox.multipdf.Splitter} that allows to split a big
+ * document on split pages identified by special strings.
+ * 
+ * @author Michael Weiss
+ *
+ */
 public class SmartSplitter
 {
 
-    private static final Log LOG = LogFactory.getLog(SmartSplitter.class);
+    private static final Logger LOGGER = Logger
+            .getLogger(SmartSplitter.class.getName());
 
-    private PDDocument sourceDocument;
+    public static PDPage importPage(PDDocument aTargetDocument, PDPage aPage)
+        throws IOException
+    {
+        PDPage imported = aTargetDocument.importPage(aPage);
+        if (aPage.getResources() != null
+                && !aPage.getCOSObject().containsKey(COSName.RESOURCES))
+        {
+            imported.setResources(aPage.getResources());
+            LOGGER.info("Resources imported in Splitter");
+        }
 
-    private PDDocument currentDestinationDocument;
+        List<PDAnnotation> annotations = imported.getAnnotations();
+        for (PDAnnotation annotation : annotations)
+        {
+            if (annotation instanceof PDAnnotationLink)
+            {
+                PDAnnotationLink link = (PDAnnotationLink) annotation;
+                PDDestination destination = link.getDestination();
+                PDAction action = link.getAction();
+                if (destination == null && action instanceof PDActionGoTo)
+                {
+                    destination = ((PDActionGoTo) action).getDestination();
+                }
+                if (destination instanceof PDPageDestination)
+                {
+                    ((PDPageDestination) destination).setPage(null);
+                }
+            }
+            annotation.setPage(null);
+        }
+        return imported;
+    }
+
+
+    public static PDDocument createNewDocument(MemoryUsageSetting aMemSet,
+            PDDocument aDocument)
+        throws IOException
+    {
+        PDDocument document = aMemSet == null ? new PDDocument()
+                : new PDDocument(aMemSet);
+        document.getDocument().setVersion(aDocument.getVersion());
+        PDDocumentInformation sourceDocumentInformation = aDocument
+                .getDocumentInformation();
+        if (sourceDocumentInformation != null)
+        {
+            COSDictionary sourceDocumentInformationDictionary = sourceDocumentInformation
+                    .getCOSObject();
+            COSDictionary destDocumentInformationDictionary = new COSDictionary();
+            for (COSName key : sourceDocumentInformationDictionary.keySet())
+            {
+                COSBase value = sourceDocumentInformationDictionary
+                        .getDictionaryObject(key);
+                if (value instanceof COSDictionary)
+                {
+                    LOGGER.warning("Nested entry for key '" + key.getName()
+                            + "' skipped in document information dictionary");
+                    if (aDocument.getDocumentCatalog()
+                            .getCOSObject() != aDocument
+                                    .getDocumentInformation().getCOSObject())
+                        continue;
+                    LOGGER.warning("/Root and /Info share the same dictionary");
+                    continue;
+                }
+                if (COSName.TYPE.equals((Object) key)) continue;
+                destDocumentInformationDictionary.setItem(key, value);
+            }
+            document.setDocumentInformation(new PDDocumentInformation(
+                    destDocumentInformationDictionary));
+        }
+        document.getDocumentCatalog().setViewerPreferences(
+                aDocument.getDocumentCatalog().getViewerPreferences());
+        return document;
+    }
+
+    private PDDocument mSourceDoc;
+
+    private PDDocument mTargetDoc;
 
     private int startPage = Integer.MIN_VALUE;
 
     private int endPage = Integer.MAX_VALUE;
 
-    private List<PDDocument> destinationDocuments;
+    private List<PDDocument> mTargetDocs;
 
-    private int currentPageNumber;
+    private int mPageNumber;
 
     private MemoryUsageSetting memoryUsageSetting = null;
 
     private final String mSplitText;
+
+    private final String[] mSplitTextArr;
 
     private ISplitStatusListener mListener;
 
@@ -49,6 +133,19 @@ public class SmartSplitter
     public SmartSplitter(String aSplitText)
     {
         mSplitText = aSplitText;
+        mSplitTextArr = mSplitText.split("\\s+");
+    }
+
+
+    public int getNumDocuments()
+    {
+        return mTargetDocs != null ? mTargetDocs.size() : 0;
+    }
+
+
+    public int getCurrentPage()
+    {
+        return mPageNumber;
     }
 
 
@@ -58,7 +155,7 @@ public class SmartSplitter
     }
 
 
-    protected void sendStatusUpdate(int aID)
+    protected void sendStatusUpdate(int aID, PDDocument aDocument)
     {
         if (mListener == null)
         {
@@ -66,8 +163,8 @@ public class SmartSplitter
         }
 
         SplitStatusEvent evt = new SplitStatusEvent(this, aID,
-                sourceDocument.getNumberOfPages(), currentPageNumber + 1,
-                destinationDocuments != null ? destinationDocuments.size() : 0);
+                mSourceDoc.getNumberOfPages(), mPageNumber + 1,
+                mTargetDocs != null ? mTargetDocs.size() : 0, aDocument);
 
         mListener.splitStatusUpdate(evt);
     }
@@ -93,11 +190,11 @@ public class SmartSplitter
 
     public List<PDDocument> split(PDDocument document) throws IOException
     {
-        this.currentPageNumber = 0;
-        this.destinationDocuments = new ArrayList<PDDocument>();
-        this.sourceDocument = document;
+        this.mPageNumber = 0;
+        this.mTargetDocs = new ArrayList<PDDocument>();
+        this.mSourceDoc = document;
         this.processPages();
-        return this.destinationDocuments;
+        return this.mTargetDocs;
     }
 
 
@@ -124,17 +221,26 @@ public class SmartSplitter
 
     private void processPages() throws IOException
     {
-        for (PDPage page : this.sourceDocument.getPages())
+        for (PDPage page : this.mSourceDoc.getPages())
         {
-            if (this.currentPageNumber + 1 >= this.startPage
-                    && this.currentPageNumber + 1 <= this.endPage)
+            if (this.mPageNumber + 1 >= this.startPage
+                    && this.mPageNumber + 1 <= this.endPage)
             {
                 this.processPage(page);
-                ++this.currentPageNumber;
+                ++this.mPageNumber;
                 continue;
             }
-            if (this.currentPageNumber > this.endPage) break;
-            ++this.currentPageNumber;
+            if (this.mPageNumber > this.endPage) break;
+            ++this.mPageNumber;
+            if (mDoAbort)
+            {
+                break;
+            }
+        }
+        if (mTargetDoc != null)
+        {
+            sendStatusUpdate(SplitStatusEvent.EVENT_DOCUMENT_FINISHED,
+                    mTargetDoc);
         }
     }
 
@@ -176,14 +282,13 @@ public class SmartSplitter
                         .getDictionaryObject(key);
                 if (value instanceof COSDictionary)
                 {
-                    LOG.warn((Object) ("Nested entry for key '" + key.getName()
+                    LOGGER.warning(("Nested entry for key '" + key.getName()
                             + "' skipped in document information dictionary"));
-                    if (this.sourceDocument.getDocumentCatalog()
-                            .getCOSObject() != this.sourceDocument
+                    if (this.mSourceDoc.getDocumentCatalog()
+                            .getCOSObject() != this.mSourceDoc
                                     .getDocumentInformation().getCOSObject())
                         continue;
-                    LOG.warn(
-                            (Object) "/Root and /Info share the same dictionary");
+                    LOGGER.warning("/Root and /Info share the same dictionary");
                     continue;
                 }
                 if (COSName.TYPE.equals((Object) key)) continue;
@@ -199,64 +304,51 @@ public class SmartSplitter
     }
 
 
-    protected void processPage(PDPage page) throws IOException
+    protected boolean containsSplitText(PDPage page)
     {
-        String text = getTextofPage(currentPageNumber + 1);
-        if (text.contains(mSplitText))
+        String text = getTextofPage(mPageNumber + 1);
+        for (String txt : mSplitTextArr)
         {
-            currentDestinationDocument = null;
-            return;
+            if (!text.contains(txt))
+            {
+                return false;
+            }
         }
-
-        if (this.currentDestinationDocument == null)
-        {
-            this.currentDestinationDocument = this.createNewDocument();
-            this.destinationDocuments.add(this.currentDestinationDocument);
-        }
-
-        PDPage imported = this.getDestinationDocument().importPage(page);
-        if (page.getResources() != null
-                && !page.getCOSObject().containsKey(COSName.RESOURCES))
-        {
-            imported.setResources(page.getResources());
-            LOG.info((Object) "Resources imported in Splitter");
-        }
-        this.processAnnotations(imported);
+        return true;
     }
 
 
-    private void processAnnotations(PDPage imported) throws IOException
+    protected void processPage(PDPage aPage) throws IOException
     {
-        List<PDAnnotation> annotations = imported.getAnnotations();
-        for (PDAnnotation annotation : annotations)
+        if (containsSplitText(aPage))
         {
-            if (annotation instanceof PDAnnotationLink)
+            if (mTargetDoc != null)
             {
-                PDAnnotationLink link = (PDAnnotationLink) annotation;
-                PDDestination destination = link.getDestination();
-                PDAction action = link.getAction();
-                if (destination == null && action instanceof PDActionGoTo)
-                {
-                    destination = ((PDActionGoTo) action).getDestination();
-                }
-                if (destination instanceof PDPageDestination)
-                {
-                    ((PDPageDestination) destination).setPage(null);
-                }
+                sendStatusUpdate(SplitStatusEvent.EVENT_DOCUMENT_FINISHED,
+                        mTargetDoc);
             }
-            annotation.setPage(null);
+            mTargetDoc = null;
+            return;
         }
+
+        if (mTargetDoc == null)
+        {
+            mTargetDocs.add(mTargetDoc = createNewDocument());
+            sendStatusUpdate(SplitStatusEvent.EVENT_NEW_DOCUMENT, mTargetDoc);
+        }
+
+        importPage(getDestinationDocument(), aPage);
     }
 
 
     protected final PDDocument getSourceDocument()
     {
-        return this.sourceDocument;
+        return mSourceDoc;
     }
 
 
     protected final PDDocument getDestinationDocument()
     {
-        return this.currentDestinationDocument;
+        return mTargetDoc;
     }
 }

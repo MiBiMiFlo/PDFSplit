@@ -4,7 +4,7 @@
 
     <groupId>de.code2be.pdfsplit</groupId>
     <artifactId>pdfsplit</artifactId>
-    <version>0.1</version>
+    <version>0.2</version>
     <packaging>jar</packaging>
     <properties>
         <java.version>11</java.version>
@@ -12,6 +12,7 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.reportEncoding>UTF-8</project.build.reportEncoding>
+        <windows.version>${project.version}.1.1</windows.version>
     </properties>
 
     <dependencies>
@@ -19,6 +20,12 @@
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>2.0.25</version>
+        </dependency>
+        <!-- We need a "not so strict" JPEG reader to be able to preview PDFs from scanners that do not follow the JPEG standard for 100% -->
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-jpeg</artifactId>
+            <version>3.3.1</version>
         </dependency>
     </dependencies>
 
@@ -76,7 +83,8 @@
                             <outfile>target/${project.name}-${project.version}.exe</outfile>
                             <jar>target/${project.name}-${project.version}-jar-with-dependencies.jar</jar>
                             <errTitle>${project.name} - Error</errTitle>
-                            <icon>images/icon256.ico</icon>
+<!--                            <icon>images/icon256.ico</icon>
+-->
                             <classPath>
                                 <mainClass>de.code2be.pdfsplit.PDFSplitter</mainClass>
                                 <addDependencies>true</addDependencies>
