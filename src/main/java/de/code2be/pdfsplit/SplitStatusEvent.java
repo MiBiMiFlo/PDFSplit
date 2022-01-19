@@ -86,18 +86,34 @@ public class SplitStatusEvent extends EventObject
     }
 
 
+    /**
+     * 
+     * @return the event ID.
+     */
     public int getID()
     {
         return mID;
     }
 
 
+    /**
+     * 
+     * @return the document that is attached to this event. <br/>
+     *         This either is the source document for
+     *         ({@link #EVENT_SPLITTING_STARTED}, {@link #EVENT_NEXT_PAGE} and
+     *         {@link #EVENT_SPLITTING_FINISHED} or the target document for
+     *         {@link #EVENT_NEW_DOCUMENT}, {@link #EVENT_DOCUMENT_FINISHED} and
+     *         {@link #EVENT_NEXT_PAGE}.
+     */
     public PDDocument getDocument()
     {
         return mDocument;
     }
 
 
+    /**
+     * @return the splitter that triggered the event.
+     */
     @Override
     public SmartSplitter getSource()
     {
@@ -105,18 +121,33 @@ public class SplitStatusEvent extends EventObject
     }
 
 
+    /**
+     * 
+     * @return the number of pages in source document (document currently being
+     *         split).
+     */
     public int getPageCount()
     {
         return mPageCount;
     }
 
 
+    /**
+     * 
+     * @return the page number in source document (document currently being
+     *         split).
+     */
     public int getCurrentPage()
     {
         return mCurrentPage;
     }
 
 
+    /**
+     * 
+     * @return the number of target documents. This is the number of documents
+     *         the source document is already split into.
+     */
     public int getDocumentCount()
     {
         return mDocumentCount;
