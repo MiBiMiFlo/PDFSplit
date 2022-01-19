@@ -17,7 +17,8 @@ import javax.swing.SwingUtilities;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 
-import de.code2be.pdfsplit.SmartSplitter;
+import de.code2be.help.I18n;
+import de.code2be.pdfsplit.PDFHelper;
 
 public class PDFDocumentPanel extends JPanel
 {
@@ -59,24 +60,23 @@ public class PDFDocumentPanel extends JPanel
 
     protected void updateStatusLabel()
     {
+        StringBuilder sb = new StringBuilder("<html>");
+        sb.append(I18n.getMessage(PDFDocumentPanel.class,
+                "main.fileInfo.fileName",
+                (mFile != null) ? mFile.getAbsolutePath() : ""));
+        List<PDFPagePanel> pages = getPagePanels();
+        int enabled = 0;
+        for (PDFPagePanel page : pages)
+        {
+            if (page.isPageEnabled())
+            {
+                enabled++;
+            }
+        }
+        sb.append("<br/>").append(I18n.getMessage(PDFDocumentPanel.class,
+                "main.fileInfo.pages", enabled, pages.size()));
+
         SwingUtilities.invokeLater(() -> {
-            StringBuilder sb = new StringBuilder("<html>");
-            sb.append("File Name: ");
-            if (mFile != null)
-            {
-                sb.append(mFile.getAbsolutePath());
-            }
-            List<PDFPagePanel> pages = getPagePanels();
-            int enabled = 0;
-            for (PDFPagePanel page : pages)
-            {
-                if (page.isPageEnabled())
-                {
-                    enabled++;
-                }
-            }
-            sb.append("<br/> Pages: ").append(enabled).append(" of ")
-                    .append(pages.size());
             mLblFileName.setText(sb.toString());
         });
     }
@@ -119,14 +119,13 @@ public class PDFDocumentPanel extends JPanel
         }
         try
         {
-            PDDocument newDoc = SmartSplitter.createNewDocument(null,
-                    mDocument);
+            PDDocument newDoc = PDFHelper.createNewDocument(null, mDocument);
 
             for (PDFPagePanel p : getPagePanels())
             {
                 if (p.isPageEnabled())
                 {
-                    SmartSplitter.importPage(newDoc, p.getPage());
+                    PDFHelper.importPage(newDoc, p.getPage());
                 }
             }
             newDoc.save(mFile);

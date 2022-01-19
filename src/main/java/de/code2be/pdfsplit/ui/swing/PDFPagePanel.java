@@ -8,14 +8,20 @@ import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 
 import javax.swing.BorderFactory;
-import javax.swing.JPanel;
+import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.rendering.PDFRenderer;
 
-public class PDFPagePanel extends JPanel
+/**
+ * This panel is used to display a preview of the assigned PDF page.
+ * 
+ * @author Michael Weiss
+ *
+ */
+public class PDFPagePanel extends JComponent
 {
 
     private static final long serialVersionUID = -8626887910399256241L;
@@ -32,6 +38,10 @@ public class PDFPagePanel extends JPanel
 
     private boolean mEnabled = true;
 
+    private long mImageValue = -1;
+
+    private boolean mCalcImageValue = false;
+
     public PDFPagePanel(PDFDocumentPanel aDocPanel, PDPage aPage,
             int aPageIndex)
     {
@@ -40,8 +50,6 @@ public class PDFPagePanel extends JPanel
         mPageIndex = aPageIndex;
         setBackground(Color.WHITE);
         setBorder(BorderFactory.createLineBorder(Color.black));
-        setLayout(new ListLayout(5, ListLayout.LEFT,
-                ListLayout.STRETCH_HORIZONTAL));
 
         addMouseListener(mMouseListener);
     }
@@ -58,6 +66,12 @@ public class PDFPagePanel extends JPanel
     public boolean isPageEnabled()
     {
         return mEnabled;
+    }
+
+
+    public long getImageValue()
+    {
+        return mImageValue;
     }
 
 
@@ -91,6 +105,74 @@ public class PDFPagePanel extends JPanel
     }
 
 
+    protected long calcImageValue(BufferedImage aImage)
+    {
+        long imgVal = 0;
+        int imgWidth = aImage.getWidth();
+        int imgHeight = aImage.getHeight();
+        for (int y = 0; y < imgHeight; y++)
+        {
+            long lineVal = 0;
+            for (int x = 0; x < imgWidth; x++)
+            {
+                int val = aImage.getRGB(x, y);
+                lineVal += (val & 0xFF);
+                lineVal += ((val >> 8) & 0xFF);
+                lineVal += ((val >> 16) & 0xFF);
+            }
+            imgVal += (lineVal / 3);
+            // TOOD: check if dark enought to stop now
+        }
+        long pxCount = (long) imgWidth * (long) imgHeight;
+        imgVal = imgVal / pxCount;
+        return imgVal;
+    }
+
+
+    protected void doRenderImage()
+    {
+        BufferedImage img = null;
+        Dimension prefSize = getPreferredSize();
+        long imgVal = 0;
+        try
+        {
+            PDRectangle mediaBox = mPage.getMediaBox();
+            double scaleH = mediaBox.getHeight() / prefSize.getHeight();
+            double scaleW = mediaBox.getWidth() / prefSize.getWidth();
+
+            double scale = Math.max(scaleH, scaleW);
+
+            PDFRenderer rdr = new PDFRenderer(mDocPanel.getDocument());
+
+            img = rdr.renderImageWithDPI(mPageIndex, (float) (72.0d / scale));
+
+            if (mCalcImageValue)
+            {
+                imgVal = calcImageValue(img);
+            }
+        }
+        catch (Exception ex)
+        {
+            ex.printStackTrace();
+            img = new BufferedImage(prefSize.width, prefSize.height,
+                    BufferedImage.TYPE_BYTE_GRAY);
+            Graphics g = img.getGraphics();
+            g.drawLine(0, 0, prefSize.width, prefSize.height);
+
+        }
+        finally
+        {
+            synchronized (this)
+            {
+                mPageImage = img;
+                mRendering = false;
+                mImageValue = imgVal;
+                SwingUtilities.invokeLater(() -> repaint());
+            }
+        }
+    }
+
+
     protected void ensureRendered()
     {
         synchronized (this)
@@ -102,40 +184,7 @@ public class PDFPagePanel extends JPanel
             mRendering = true;
         }
 
-        Thread t = new Thread(() -> {
-            BufferedImage img = null;
-            Dimension prefSize = getPreferredSize();
-            try
-            {
-                PDRectangle mediaBox = mPage.getMediaBox();
-                double scaleH = mediaBox.getHeight() / prefSize.getHeight();
-                double scaleW = mediaBox.getWidth() / prefSize.getWidth();
-
-                double scale = Math.max(scaleH, scaleW);
-
-                PDFRenderer rdr = new PDFRenderer(mDocPanel.getDocument());
-                img = rdr.renderImageWithDPI(mPageIndex,
-                        (float) (72.0d / scale));
-            }
-            catch (Exception ex)
-            {
-                ex.printStackTrace();
-                img = new BufferedImage(prefSize.width, prefSize.height,
-                        BufferedImage.TYPE_BYTE_GRAY);
-                Graphics g = img.getGraphics();
-                g.drawLine(0, 0, prefSize.width, prefSize.height);
-
-            }
-            finally
-            {
-                synchronized (this)
-                {
-                    mPageImage = img;
-                    mRendering = false;
-                    SwingUtilities.invokeLater(() -> repaint());
-                }
-            }
-        });
+        Thread t = new Thread(() -> doRenderImage());
         t.setDaemon(true);
         t.start();
     }
@@ -145,16 +194,19 @@ public class PDFPagePanel extends JPanel
     protected void paintComponent(Graphics aG)
     {
         super.paintComponent(aG);
-        ensureRendered();
-        if (mPageImage != null)
+        Graphics g = aG.create();
+        try
         {
-            Graphics g = aG.create();
-            try
+            ensureRendered();
+            int x = 0;
+            int y = 0;
+            int width = getWidth();
+            int height = getHeight();
+            g.setColor(Color.white);
+            g.fillRect(0, 0, width, height);
+
+            if (mPageImage != null)
             {
-                int x = 0;
-                int y = 0;
-                int width = getWidth();
-                int height = getHeight();
                 if (mPageImage.getWidth() > width
                         || mPageImage.getHeight() > height)
                 {
@@ -165,11 +217,7 @@ public class PDFPagePanel extends JPanel
                 {
                     g.drawImage(mPageImage, x, y, mPageImage.getWidth(),
                             mPageImage.getHeight(), this);
-
                 }
-
-                g.drawImage(mPageImage, x, y, mPageImage.getWidth(),
-                        mPageImage.getHeight(), this);
 
                 if (!mEnabled)
                 {
@@ -180,10 +228,10 @@ public class PDFPagePanel extends JPanel
                     g.fillRect(0, 0, getWidth(), getHeight());
                 }
             }
-            finally
-            {
-                g.dispose();
-            }
+        }
+        finally
+        {
+            g.dispose();
         }
     }
 

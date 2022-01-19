@@ -3,21 +3,10 @@ package de.code2be.pdfsplit;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
-import org.apache.pdfbox.cos.COSBase;
-import org.apache.pdfbox.cos.COSDictionary;
-import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.interactive.action.PDAction;
-import org.apache.pdfbox.pdmodel.interactive.action.PDActionGoTo;
-import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
-import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink;
-import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDDestination;
-import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
 import org.apache.pdfbox.text.PDFTextStripper;
 
 /**
@@ -31,121 +20,33 @@ import org.apache.pdfbox.text.PDFTextStripper;
 public class SmartSplitter
 {
 
-    private static final Logger LOGGER = Logger
-            .getLogger(SmartSplitter.class.getName());
-
-    public static PDPage importPage(PDDocument aTargetDocument, PDPage aPage)
-        throws IOException
-    {
-        PDPage imported = aTargetDocument.importPage(aPage);
-        if (aPage.getResources() != null
-                && !aPage.getCOSObject().containsKey(COSName.RESOURCES))
-        {
-            imported.setResources(aPage.getResources());
-            LOGGER.info("Resources imported in Splitter");
-        }
-
-        List<PDAnnotation> annotations = imported.getAnnotations();
-        for (PDAnnotation annotation : annotations)
-        {
-            if (annotation instanceof PDAnnotationLink)
-            {
-                PDAnnotationLink link = (PDAnnotationLink) annotation;
-                PDDestination destination = link.getDestination();
-                PDAction action = link.getAction();
-                if (destination == null && action instanceof PDActionGoTo)
-                {
-                    destination = ((PDActionGoTo) action).getDestination();
-                }
-                if (destination instanceof PDPageDestination)
-                {
-                    ((PDPageDestination) destination).setPage(null);
-                }
-            }
-            annotation.setPage(null);
-        }
-        return imported;
-    }
-
-
-    public static PDDocument createNewDocument(MemoryUsageSetting aMemSet,
-            PDDocument aDocument)
-        throws IOException
-    {
-        PDDocument document = aMemSet == null ? new PDDocument()
-                : new PDDocument(aMemSet);
-        document.getDocument().setVersion(aDocument.getVersion());
-        PDDocumentInformation sourceDocumentInformation = aDocument
-                .getDocumentInformation();
-        if (sourceDocumentInformation != null)
-        {
-            COSDictionary sourceDocumentInformationDictionary = sourceDocumentInformation
-                    .getCOSObject();
-            COSDictionary destDocumentInformationDictionary = new COSDictionary();
-            for (COSName key : sourceDocumentInformationDictionary.keySet())
-            {
-                COSBase value = sourceDocumentInformationDictionary
-                        .getDictionaryObject(key);
-                if (value instanceof COSDictionary)
-                {
-                    LOGGER.warning("Nested entry for key '" + key.getName()
-                            + "' skipped in document information dictionary");
-                    if (aDocument.getDocumentCatalog()
-                            .getCOSObject() != aDocument
-                                    .getDocumentInformation().getCOSObject())
-                        continue;
-                    LOGGER.warning("/Root and /Info share the same dictionary");
-                    continue;
-                }
-                if (COSName.TYPE.equals((Object) key)) continue;
-                destDocumentInformationDictionary.setItem(key, value);
-            }
-            document.setDocumentInformation(new PDDocumentInformation(
-                    destDocumentInformationDictionary));
-        }
-        document.getDocumentCatalog().setViewerPreferences(
-                aDocument.getDocumentCatalog().getViewerPreferences());
-        return document;
-    }
-
     private PDDocument mSourceDoc;
 
     private PDDocument mTargetDoc;
 
-    private int startPage = Integer.MIN_VALUE;
+    private int mStartPage = Integer.MIN_VALUE;
 
-    private int endPage = Integer.MAX_VALUE;
+    private int mEndPage = Integer.MAX_VALUE;
 
     private List<PDDocument> mTargetDocs;
 
-    private int mPageNumber;
+    private int mCurrentPage;
 
-    private MemoryUsageSetting memoryUsageSetting = null;
+    private MemoryUsageSetting mMemoryUsageSetting = null;
 
-    private final String mSplitText;
-
-    private final String[] mSplitTextArr;
+    private String[] mSplitTextArr;
 
     private ISplitStatusListener mListener;
 
     private volatile boolean mDoAbort = false;
 
-    public SmartSplitter(String aSplitText)
-    {
-        mSplitText = aSplitText;
-        mSplitTextArr = mSplitText.split("\\s+");
-    }
-
-
-    public int getNumDocuments()
+    /**
+     * 
+     * @return the number of target documents currently available.
+     */
+    public int getDocumentCount()
     {
         return mTargetDocs != null ? mTargetDocs.size() : 0;
-    }
-
-
-    public int getCurrentPage()
-    {
-        return mPageNumber;
     }
 
 
@@ -163,7 +64,7 @@ public class SmartSplitter
         }
 
         SplitStatusEvent evt = new SplitStatusEvent(this, aID,
-                mSourceDoc.getNumberOfPages(), mPageNumber + 1,
+                mSourceDoc.getNumberOfPages(), mCurrentPage,
                 mTargetDocs != null ? mTargetDocs.size() : 0, aDocument);
 
         mListener.splitStatusUpdate(evt);
@@ -178,135 +79,164 @@ public class SmartSplitter
 
     public MemoryUsageSetting getMemoryUsageSetting()
     {
-        return this.memoryUsageSetting;
+        return mMemoryUsageSetting;
     }
 
 
-    public void setMemoryUsageSetting(MemoryUsageSetting memoryUsageSetting)
+    public void setMemoryUsageSetting(MemoryUsageSetting aMemoryUsageSetting)
     {
-        this.memoryUsageSetting = memoryUsageSetting;
+        mMemoryUsageSetting = aMemoryUsageSetting;
     }
 
 
-    public List<PDDocument> split(PDDocument document) throws IOException
+    public List<PDDocument> split(PDDocument aDocument, String aSplitText)
+        throws IOException
     {
-        this.mPageNumber = 0;
-        this.mTargetDocs = new ArrayList<PDDocument>();
-        this.mSourceDoc = document;
-        this.processPages();
-        return this.mTargetDocs;
+        mCurrentPage = 0;
+        mTargetDocs = new ArrayList<PDDocument>();
+        mTargetDoc = null;
+        mSourceDoc = aDocument;
+        mSplitTextArr = aSplitText.split("\\s+");
+        processPages();
+        return mTargetDocs;
     }
 
 
-    public void setStartPage(int start)
+    /**
+     * Set the index of the first page to process.
+     * 
+     * @param aStartPage
+     *            the index of the first page to process. The first page has
+     *            index 1.
+     */
+    public void setStartPage(int aStartPage)
     {
-        if (start <= 0)
+        if (aStartPage < 0)
         {
             throw new IllegalArgumentException(
-                    "Start page is smaller than one");
+                    "Start page is not allowed to be negative.");
         }
-        this.startPage = start;
+        mStartPage = aStartPage;
     }
 
 
-    public void setEndPage(int end)
+    /**
+     * Set the index of the first page to not process anymore.
+     * 
+     * @param aEnd
+     *            the index of the first page to not process anymore. If this is
+     *            5 than pages 0-4 are included (5 pages) but page 5 (6'th page
+     *            is not included anymore).
+     */
+    public void setEndPage(int aEnd)
     {
-        if (end <= 0)
+        if (aEnd < 0)
         {
-            throw new IllegalArgumentException("End page is smaller than one");
+            throw new IllegalArgumentException(
+                    "End page is not allowed to be negative");
         }
-        this.endPage = end;
+        mEndPage = aEnd;
     }
 
 
-    private void processPages() throws IOException
+    protected void processPages() throws IOException
     {
-        for (PDPage page : this.mSourceDoc.getPages())
+        sendStatusUpdate(SplitStatusEvent.EVENT_SPLITTING_STARTED, mSourceDoc);
+
+        for (PDPage page : mSourceDoc.getPages())
         {
-            if (this.mPageNumber + 1 >= this.startPage
-                    && this.mPageNumber + 1 <= this.endPage)
-            {
-                this.processPage(page);
-                ++this.mPageNumber;
-                continue;
-            }
-            if (this.mPageNumber > this.endPage) break;
-            ++this.mPageNumber;
             if (mDoAbort)
+            {
+                // abort processing.
+                break;
+            }
+            if (mCurrentPage >= mEndPage)
             {
                 break;
             }
+            if (mCurrentPage >= mStartPage && mCurrentPage < mEndPage)
+            {
+                if (containsSplitText(page))
+                {
+                    // current page contains the split text --> end of previous
+                    // document (this page is dropped)
+                    if (mTargetDoc != null)
+                    {
+                        sendStatusUpdate(
+                                SplitStatusEvent.EVENT_DOCUMENT_FINISHED,
+                                mTargetDoc);
+                    }
+                    mTargetDoc = null;
+                }
+                else
+                {
+                    // not a split page --> include into target document
+                    if (mTargetDoc == null)
+                    {
+                        // no active target document --> create a new target
+                        // document
+                        mTargetDocs.add(mTargetDoc = PDFHelper
+                                .createNewDocument(getMemoryUsageSetting(),
+                                        getSourceDocument()));
+                        sendStatusUpdate(SplitStatusEvent.EVENT_NEW_DOCUMENT,
+                                mTargetDoc);
+                    }
+
+                    // import the page into the new target document
+                    PDFHelper.importPage(getTargetDocument(), page);
+                    sendStatusUpdate(SplitStatusEvent.EVENT_NEXT_PAGE,
+                            mSourceDoc);
+                }
+            }
+            mCurrentPage++;
         }
         if (mTargetDoc != null)
         {
             sendStatusUpdate(SplitStatusEvent.EVENT_DOCUMENT_FINISHED,
                     mTargetDoc);
         }
+
+        sendStatusUpdate(SplitStatusEvent.EVENT_SPLITTING_FINISHED, mSourceDoc);
+        mTargetDoc = null;
     }
 
 
+    /**
+     * Retrieve all text of the page with
+     * 
+     * @param aPageNumber
+     *            the page index (first page is index 0).
+     * @return the text of the given page or an empty string if text can not be
+     *         retrieved.
+     */
     protected String getTextofPage(int aPageNumber)
     {
         PDFTextStripper reader;
         try
         {
             reader = new PDFTextStripper();
-            reader.setStartPage(aPageNumber);
-            reader.setEndPage(aPageNumber);
+            reader.setStartPage(aPageNumber + 1);
+            reader.setEndPage(aPageNumber + 1);
             return reader.getText(getSourceDocument());
         }
-        catch (IOException e)
+        catch (IOException ex)
         {
-            e.printStackTrace();
+            ex.printStackTrace();
         }
         return "";
     }
 
 
-    protected PDDocument createNewDocument() throws IOException
-    {
-        PDDocument document = this.memoryUsageSetting == null ? new PDDocument()
-                : new PDDocument(this.memoryUsageSetting);
-        document.getDocument()
-                .setVersion(this.getSourceDocument().getVersion());
-        PDDocumentInformation sourceDocumentInformation = this
-                .getSourceDocument().getDocumentInformation();
-        if (sourceDocumentInformation != null)
-        {
-            COSDictionary sourceDocumentInformationDictionary = sourceDocumentInformation
-                    .getCOSObject();
-            COSDictionary destDocumentInformationDictionary = new COSDictionary();
-            for (COSName key : sourceDocumentInformationDictionary.keySet())
-            {
-                COSBase value = sourceDocumentInformationDictionary
-                        .getDictionaryObject(key);
-                if (value instanceof COSDictionary)
-                {
-                    LOGGER.warning(("Nested entry for key '" + key.getName()
-                            + "' skipped in document information dictionary"));
-                    if (this.mSourceDoc.getDocumentCatalog()
-                            .getCOSObject() != this.mSourceDoc
-                                    .getDocumentInformation().getCOSObject())
-                        continue;
-                    LOGGER.warning("/Root and /Info share the same dictionary");
-                    continue;
-                }
-                if (COSName.TYPE.equals((Object) key)) continue;
-                destDocumentInformationDictionary.setItem(key, value);
-            }
-            document.setDocumentInformation(new PDDocumentInformation(
-                    destDocumentInformationDictionary));
-        }
-        document.getDocumentCatalog()
-                .setViewerPreferences(this.getSourceDocument()
-                        .getDocumentCatalog().getViewerPreferences());
-        return document;
-    }
-
-
+    /**
+     * Check if the given page contains the defined split text.
+     * 
+     * @param page
+     *            the page to check for the defined split text.
+     * @return true if the split text was found, false otherwise.
+     */
     protected boolean containsSplitText(PDPage page)
     {
-        String text = getTextofPage(mPageNumber + 1);
+        String text = getTextofPage(mCurrentPage);
         for (String txt : mSplitTextArr)
         {
             if (!text.contains(txt))
@@ -318,36 +248,24 @@ public class SmartSplitter
     }
 
 
-    protected void processPage(PDPage aPage) throws IOException
-    {
-        if (containsSplitText(aPage))
-        {
-            if (mTargetDoc != null)
-            {
-                sendStatusUpdate(SplitStatusEvent.EVENT_DOCUMENT_FINISHED,
-                        mTargetDoc);
-            }
-            mTargetDoc = null;
-            return;
-        }
-
-        if (mTargetDoc == null)
-        {
-            mTargetDocs.add(mTargetDoc = createNewDocument());
-            sendStatusUpdate(SplitStatusEvent.EVENT_NEW_DOCUMENT, mTargetDoc);
-        }
-
-        importPage(getDestinationDocument(), aPage);
-    }
-
-
+    /**
+     * 
+     * @return the current source document. This is the docuemnt that is
+     *         currently processed or was processed last.
+     */
     protected final PDDocument getSourceDocument()
     {
         return mSourceDoc;
     }
 
 
-    protected final PDDocument getDestinationDocument()
+    /**
+     * The current destination document. This is the document that get's the
+     * next page assigned.
+     * 
+     * @return the current target document.
+     */
+    protected final PDDocument getTargetDocument()
     {
         return mTargetDoc;
     }

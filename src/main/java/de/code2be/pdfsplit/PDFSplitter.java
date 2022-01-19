@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.swing.JFrame;
 import javax.swing.UIManager;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -108,7 +107,7 @@ public class PDFSplitter
         int pgCount = doc.getNumberOfPages();
         System.out.println("Found " + pgCount + " pages!");
 
-        List<PDDocument> allDocs = new SmartSplitter(aSeparator).split(doc);
+        List<PDDocument> allDocs = new SmartSplitter().split(doc, aSeparator);
 
         System.out.println("Found " + allDocs.size() + " documents!");
 
@@ -125,7 +124,6 @@ public class PDFSplitter
         return id;
     }
 
-    private static JFrame mFrame;
 
     protected static void showFrame()
     {
@@ -138,8 +136,7 @@ public class PDFSplitter
             ex.printStackTrace();
         }
 
-        mFrame = new PDFSplitFrame();
-        mFrame.setVisible(true);
+        new PDFSplitFrame().setVisible(true);
     }
 
 }

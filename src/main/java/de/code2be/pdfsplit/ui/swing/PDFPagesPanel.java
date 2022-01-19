@@ -8,6 +8,14 @@ import java.awt.Rectangle;
 import javax.swing.JPanel;
 import javax.swing.Scrollable;
 
+/**
+ * This is a special JPanel that will hold all {@link PDFPagePanel}'s of a
+ * document. This panel is normally placed inside of an
+ * {@link PDFDocumentPanel}.
+ * 
+ * @author Michael Weiss
+ *
+ */
 public class PDFPagesPanel extends JPanel implements Scrollable
 {
 

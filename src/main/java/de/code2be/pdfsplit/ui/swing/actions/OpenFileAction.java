@@ -44,13 +44,15 @@ public class OpenFileAction extends BasicAction
     {
         if (mFrame.isWorking())
         {
+            mFrame.setStatusText(getMessageForSubKey("errorAlreadyWorking"));
             return;
         }
 
         JFileChooser chooser = new JFileChooser();
-        chooser.addChoosableFileFilter(
-                new FileExtensionFilter(".pdf", "PDF Files (*.pdf)"));
-
+        chooser.addChoosableFileFilter(new FileExtensionFilter(".pdf",
+                getMessageForSubKey("pdfFilter")));
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        chooser.setAcceptAllFileFilterUsed(false);
         File curDir = getCurrentDirectory();
         if (curDir != null)
         {

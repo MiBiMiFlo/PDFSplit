@@ -3,6 +3,7 @@ package de.code2be.pdfsplit.ui.swing;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -13,6 +14,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -23,6 +25,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 
@@ -30,6 +33,7 @@ import de.code2be.help.I18n;
 import de.code2be.pdfsplit.ISplitStatusListener;
 import de.code2be.pdfsplit.SmartSplitter;
 import de.code2be.pdfsplit.SplitStatusEvent;
+import de.code2be.pdfsplit.ui.swing.actions.DeleteDocumentAction;
 import de.code2be.pdfsplit.ui.swing.actions.OpenFileAction;
 import de.code2be.pdfsplit.ui.swing.actions.RenameAction;
 import de.code2be.pdfsplit.ui.swing.actions.SaveAction;
@@ -63,7 +67,9 @@ public class PDFSplitFrame extends JFrame
 
     private boolean mWorking;
 
-    private JLabel mLblStatus;
+    private JLabel mLblFileInfo;
+
+    private JTextField mStatusBar;
 
     private SmartSplitter mSmartSplitter;
 
@@ -73,9 +79,14 @@ public class PDFSplitFrame extends JFrame
 
     private Dimension mPreviewSize;
 
+    private int mTabIdx = 0;
+
+    private ImageIcon mPdfFileIcon;
+
     public PDFSplitFrame()
     {
-        super("PDFSplit-UI");
+        super(I18n.getMessage(PDFSplitFrame.class, "TITLE"));
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         setJMenuBar(createMenuBar());
@@ -84,22 +95,33 @@ public class PDFSplitFrame extends JFrame
 
         JPanel topPane = new JPanel(new BorderLayout());
 
-        JPanel mStatusPanel = new JPanel(new ListLayout(5, ListLayout.LEFT,
-                ListLayout.STRETCH_HORIZONTAL));
+        JPanel mStatusPanel = new JPanel(new FlowLayout(FlowLayout.LEADING));
 
         topPane.add(mStatusPanel, BorderLayout.CENTER);
         topPane.add(createToolBar(), BorderLayout.NORTH);
         contentPane.add(topPane, BorderLayout.NORTH);
-        mStatusPanel.add(mLblStatus = new JLabel());
-        mLblStatus.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        mLblStatus.setFont(mLblStatus.getFont().deriveFont(14.0f));
+        mStatusPanel.add(mLblFileInfo = new JLabel());
+        mLblFileInfo.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        mLblFileInfo.setFont(mLblFileInfo.getFont().deriveFont(14.0f));
+        contentPane.add(mStatusBar = new JTextField(), BorderLayout.SOUTH);
+        mStatusBar.setText("Ready");
+        mStatusBar.setEditable(false);
+        mStatusBar.setBackground(mLblFileInfo.getBackground());
+        mStatusBar.setForeground(mLblFileInfo.getForeground());
+        mStatusBar.setFont(mLblFileInfo.getFont());
+
         contentPane.add(mDocsPane = new JTabbedPane(), BorderLayout.CENTER);
+
         mDocsPane.setTabPlacement(JTabbedPane.LEFT);
+        mDocsPane.setFont(mDocsPane.getFont().deriveFont(14.0f));
+
         setContentPane(contentPane);
         setMinimumSize(new Dimension(800, 900));
         setLocationByPlatform(true);
         pack();
         setVisible(true);
+        mPdfFileIcon = new ImageIcon(getClass()
+                .getResource("/de/code2be/pdfsplit/ui/icons/16/pdf.png"));
     }
 
 
@@ -160,11 +182,8 @@ public class PDFSplitFrame extends JFrame
     private JMenuBar createMenuBar()
     {
         JMenuBar res = new JMenuBar();
-        String txtFile = I18n.getMessage("de.code2be.pdfsplit.ui.swing.frame",
-                "MENU.FILE.name");
-        String txtView = I18n.getMessage("de.code2be.pdfsplit.ui.swing.frame",
-                "MENU.VIEW.name");
-        JMenu fileMenu = new JMenu(txtFile);
+        JMenu fileMenu = new JMenu(
+                I18n.getMessage(PDFSplitFrame.class, "MENU.FILE.name"));
         fileMenu.add(new OpenFileAction(this));
         fileMenu.addSeparator();
         fileMenu.add(new SaveAction(this));
@@ -173,13 +192,21 @@ public class PDFSplitFrame extends JFrame
         fileMenu.addSeparator();
         fileMenu.add(new RenameAction(this));
         fileMenu.addSeparator();
+        fileMenu.add(new DeleteDocumentAction(this));
+        fileMenu.addSeparator();
         fileMenu.add(new ShowSettingsAction(this));
         res.add(fileMenu);
 
-        JMenu editMenu = new JMenu(txtView);
-        editMenu.add(new ZoomInAction(this));
-        editMenu.add(new ZoomOutAction(this));
+        JMenu editMenu = new JMenu(
+                I18n.getMessage(PDFSplitFrame.class, "MENU.EDIT.name"));
+        editMenu.add(new RenameAction(this));
         res.add(editMenu);
+
+        JMenu viewMenu = new JMenu(
+                I18n.getMessage(PDFSplitFrame.class, "MENU.VIEW.name"));
+        viewMenu.add(new ZoomInAction(this));
+        viewMenu.add(new ZoomOutAction(this));
+        res.add(viewMenu);
         return res;
     }
 
@@ -193,6 +220,8 @@ public class PDFSplitFrame extends JFrame
         toolBar.add(new SaveAllAction(this));
         toolBar.add(new SaveAsAction(this));
         toolBar.add(new RenameAction(this));
+        toolBar.addSeparator();
+        toolBar.add(new DeleteDocumentAction(this));
         toolBar.addSeparator();
         toolBar.add(new ZoomInAction(this));
         toolBar.add(new ZoomOutAction(this));
@@ -230,6 +259,9 @@ public class PDFSplitFrame extends JFrame
         {
             docPane.setPreviewSize(aSize);
         }
+
+        setStatusText(I18n.getMessage(PDFSplitFrame.class,
+                "main.setPreviewSize", aSize.width, aSize.height));
     }
 
 
@@ -276,6 +308,8 @@ public class PDFSplitFrame extends JFrame
 
     public void showError(String aMessage, String aTitle, Exception aException)
     {
+        setStatusText(I18n.getMessage(PDFSplitFrame.class, "main.errorMessage",
+                aMessage));
         String longMessage = "";
         if (aMessage != null)
         {
@@ -298,31 +332,33 @@ public class PDFSplitFrame extends JFrame
     }
 
 
-    protected void updateStatusLabel()
+    public void setStatusText(final String aText)
+    {
+        SwingUtilities.invokeLater(() -> mStatusBar.setText(aText));
+    }
+
+
+    protected void updateFileInfoLabel(SplitStatusEvent aEvent)
     {
         StringBuilder sb = new StringBuilder("<html>");
-        sb.append("File Name: ");
-        if (mPDFFile != null)
-        {
-            sb.append(mPDFFile.getAbsolutePath());
-        }
-        sb.append("<br/>Pages: ");
-        if (mPDFDocument != null)
-        {
-            sb.append(mPDFDocument.getNumberOfPages());
-        }
+
+        sb.append(I18n.getMessage(PDFSplitFrame.class, "main.fileInfo.fileName",
+                (mPDFFile != null) ? mPDFFile.getAbsolutePath() : ""));
         sb.append("<br/>");
-        if (mSmartSplitter != null)
+        sb.append(I18n.getMessage(PDFSplitFrame.class, "main.fileInfo.pages",
+                (mPDFDocument != null) ? mPDFDocument.getNumberOfPages() : 0));
+        sb.append("<br/>");
+        if (aEvent != null)
         {
-            sb.append("Processed: ").append(mSmartSplitter.getCurrentPage())
-                    .append("/").append(mPDFDocument.getNumberOfPages())
-                    .append(" (").append(mSmartSplitter.getNumDocuments())
-                    .append(" Documents)");
+            sb.append(I18n.getMessage(PDFSplitFrame.class,
+                    "main.fileInfo.processed", aEvent.getCurrentPage(),
+                    aEvent.getPageCount(), aEvent.getDocumentCount()));
             sb.append("<br/>");
         }
+
         final String text = sb.toString();
         SwingUtilities.invokeLater(() -> {
-            mLblStatus.setText(text);
+            mLblFileInfo.setText(text);
         });
 
     }
@@ -330,18 +366,35 @@ public class PDFSplitFrame extends JFrame
 
     private void openFileImpl(File aFile)
     {
+        if (mPDFDocument != null)
+        {
+            try
+            {
+                mPDFDocument.close();
+                mPDFDocument = null;
+                mPDFFile = null;
+            }
+            catch (Exception ex)
+            {
+                showError(null, "ERROR - Closing old PDF File", ex);
+            }
+        }
+
         try
         {
             mPDFFile = aFile;
-            SwingUtilities.invokeLater(() -> {
-                updateStatusLabel();
-            });
+            updateFileInfoLabel(null);
+            setStatusText("Reading file " + mPDFFile.getAbsolutePath());
             mPDFDocument = PDDocument.load(mPDFFile);
 
+            updateFileInfoLabel(null);
+
+            setStatusText("Splitting File " + mPDFFile.getAbsolutePath());
             String sepStr = getConfig().getProperty(PROP_SEPARATOR);
-            mSmartSplitter = new SmartSplitter(sepStr);
+            mSmartSplitter = new SmartSplitter();
             mSmartSplitter.setStatusListener(mSplitListener);
-            mSmartSplitter.split(mPDFDocument);
+            mSmartSplitter.split(mPDFDocument, sepStr);
+            setStatusText("File " + mPDFFile.getAbsolutePath() + " opened.");
         }
         catch (Exception ex)
         {
@@ -351,7 +404,6 @@ public class PDFSplitFrame extends JFrame
         {
             mWorking = false;
         }
-
     }
 
 
@@ -394,32 +446,26 @@ public class PDFSplitFrame extends JFrame
 
     protected void addTabForDoc(PDDocument aDocument)
     {
-        Thread t = new Thread(() -> {
+        mTabIdx++;
+        String fileName = mPDFFile.getName().replace(".pdf",
+                "_" + mTabIdx + ".pdf");
+        PDFDocumentPanel pnl = new PDFDocumentPanel(aDocument,
+                new File(mPDFFile.getParent(), fileName));
 
-            int id = mDocsPane.getTabCount() + 1;
-            String fileName = mPDFFile.getName().replace(".pdf",
-                    "_" + id + ".pdf");
-            PDFDocumentPanel pnl = new PDFDocumentPanel(aDocument,
-                    new File(mPDFFile.getParent(), fileName));
-            pnl.setPreviewSize(getPreviewSize());
-            pnl.addPropertyChangeListener("name", (aEvt) -> {
-                for (int i = 0; i < mDocsPane.getTabCount(); i++)
-                {
-                    if (mDocsPane.getComponent(i) == aEvt.getSource())
-                    {
-                        mDocsPane.setTitleAt(i, aEvt.getNewValue().toString());
-                    }
-                }
-            });
+        JLabel lbl = new JLabel(fileName, mPdfFileIcon, JLabel.LEFT);
+        lbl.setFont(mDocsPane.getFont());
 
-            SwingUtilities.invokeLater(() -> {
-                mDocsPane.addTab(fileName, pnl);
-                mDocsPane.setSelectedComponent(pnl);
-            });
-
+        pnl.setPreviewSize(getPreviewSize());
+        pnl.addPropertyChangeListener("name", (aEvt) -> {
+            lbl.setText((String) aEvt.getNewValue());
         });
-        t.setDaemon(true);
-        t.start();
+
+        SwingUtilities.invokeLater(() -> {
+            int size = mDocsPane.getTabCount();
+            mDocsPane.insertTab(fileName, mPdfFileIcon, pnl, fileName, size);
+            mDocsPane.setSelectedIndex(size);
+            mDocsPane.setTabComponentAt(size, lbl);
+        });
     }
 
     private final ISplitStatusListener mSplitListener = new ISplitStatusListener()
@@ -428,7 +474,7 @@ public class PDFSplitFrame extends JFrame
         @Override
         public void splitStatusUpdate(SplitStatusEvent aEvent)
         {
-            updateStatusLabel();
+            updateFileInfoLabel(aEvent);
             if (aEvent.getID() == SplitStatusEvent.EVENT_DOCUMENT_FINISHED)
             {
                 final PDDocument doc = aEvent.getDocument();
@@ -436,4 +482,18 @@ public class PDFSplitFrame extends JFrame
             }
         }
     };
+
+    public static void main(String[] args)
+    {
+        try
+        {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        }
+        catch (Exception ex)
+        {
+            ex.printStackTrace();
+        }
+
+        new PDFSplitFrame().setVisible(true);
+    }
 }

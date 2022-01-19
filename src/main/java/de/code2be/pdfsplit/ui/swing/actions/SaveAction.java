@@ -22,10 +22,13 @@ public class SaveAction extends BasicAction
     @Override
     public void actionPerformed(ActionEvent aE)
     {
-        PDFDocumentPanel pnl = mFrame.getSelectedDocumentPanel();
-        if (pnl != null)
+        PDFDocumentPanel panel = mFrame.getSelectedDocumentPanel();
+
+        if (panel == null)
         {
-            pnl.save();
+            mFrame.setStatusText(getMessageForSubKey("errorNoPanel"));
+            return;
         }
+        panel.save();
     }
 }

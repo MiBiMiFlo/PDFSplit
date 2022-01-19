@@ -5,6 +5,7 @@ import java.io.File;
 
 import javax.swing.JFileChooser;
 
+import de.code2be.pdfsplit.ui.swing.FileExtensionFilter;
 import de.code2be.pdfsplit.ui.swing.PDFDocumentPanel;
 import de.code2be.pdfsplit.ui.swing.PDFSplitFrame;
 
@@ -27,15 +28,29 @@ public class RenameAction extends BasicAction
     {
         PDFDocumentPanel panel = mFrame.getSelectedDocumentPanel();
 
+        if (panel == null)
+        {
+            mFrame.setStatusText(getMessageForSubKey("errorNoPanel"));
+            return;
+        }
         File f = panel.getFile();
 
         JFileChooser chooser = new JFileChooser(f.getParentFile());
+        chooser.addChoosableFileFilter(new FileExtensionFilter(".pdf",
+                getMessageForSubKey("pdfFilter")));
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        chooser.setAcceptAllFileFilterUsed(false);
+
         chooser.setSelectedFile(f);
         int res = chooser.showSaveDialog(mFrame);
 
         if (res == JFileChooser.APPROVE_OPTION)
         {
             f = chooser.getSelectedFile();
+            if (!f.getName().toLowerCase().endsWith(".pdf"))
+            {
+                f = new File(f.getParentFile(), f.getName() + ".pdf");
+            }
             panel.setFile(f);
         }
 

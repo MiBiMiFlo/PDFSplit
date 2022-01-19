@@ -5,6 +5,7 @@ import java.io.File;
 
 import javax.swing.JFileChooser;
 
+import de.code2be.pdfsplit.ui.swing.FileExtensionFilter;
 import de.code2be.pdfsplit.ui.swing.PDFDocumentPanel;
 import de.code2be.pdfsplit.ui.swing.PDFSplitFrame;
 
@@ -25,21 +26,28 @@ public class SaveAsAction extends BasicAction
     @Override
     public void actionPerformed(ActionEvent aE)
     {
-        PDFDocumentPanel pnl = mFrame.getSelectedDocumentPanel();
-        if (pnl != null)
+        PDFDocumentPanel panel = mFrame.getSelectedDocumentPanel();
+        if (panel == null)
         {
-            File curFile = pnl.getFile();
-            JFileChooser chooser = new JFileChooser(curFile.getParentFile());
-            chooser.setSelectedFile(curFile);
-            int res = chooser.showSaveDialog(mFrame);
-            if (res == JFileChooser.APPROVE_OPTION)
-            {
-                File newFile = chooser.getSelectedFile();
-                if (newFile != null)
-                {
-                    pnl.saveAs(newFile);
-                }
+            mFrame.setStatusText(getMessageForSubKey("errorNoPanel"));
+            return;
+        }
 
+        File curFile = panel.getFile();
+        JFileChooser chooser = new JFileChooser(curFile.getParentFile());
+        chooser.addChoosableFileFilter(
+                new FileExtensionFilter(".pdf", "PDF Files (*.pdf)"));
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        chooser.setAcceptAllFileFilterUsed(false);
+
+        chooser.setSelectedFile(curFile);
+        int res = chooser.showSaveDialog(mFrame);
+        if (res == JFileChooser.APPROVE_OPTION)
+        {
+            File newFile = chooser.getSelectedFile();
+            if (newFile != null)
+            {
+                panel.saveAs(newFile);
             }
 
         }
