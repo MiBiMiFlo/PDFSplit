@@ -7,6 +7,7 @@ import java.awt.FlowLayout;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -94,7 +95,16 @@ public class PDFSplitFrame extends JFrame
     public PDFSplitFrame()
     {
         super(I18n.getMessage(PDFSplitFrame.class, "TITLE"));
-
+        try
+        {
+            URL imgURL = getClass().getResource(
+                    "/de/code2be/pdfsplit/ui/icons/64/pdfsplit.png");
+            setIconImage(new ImageIcon(imgURL).getImage());
+        }
+        catch (Exception ex)
+        {
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+        }
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         initializeComponents();
         setMinimumSize(new Dimension(800, 900));

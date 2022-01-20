@@ -83,8 +83,7 @@
                             <outfile>target/${project.name}-${project.version}.exe</outfile>
                             <jar>target/${project.name}-${project.version}-jar-with-dependencies.jar</jar>
                             <errTitle>${project.name} - Error</errTitle>
-<!--                            <icon>images/icon256.ico</icon>
--->
+                            <icon>src/main/resources/pdfsplit.ico</icon>
                             <classPath>
                                 <mainClass>de.code2be.pdfsplit.PDFSplitter</mainClass>
                                 <addDependencies>true</addDependencies>
