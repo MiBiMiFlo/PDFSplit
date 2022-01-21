@@ -4,7 +4,7 @@
 
     <groupId>de.code2be.pdfsplit</groupId>
     <artifactId>pdfsplit</artifactId>
-    <version>0.2</version>
+    <version>0.3</version>
     <packaging>jar</packaging>
     <properties>
         <java.version>11</java.version>
@@ -13,6 +13,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.reportEncoding>UTF-8</project.build.reportEncoding>
         <windows.version>${project.version}.1.1</windows.version>
+        <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss</maven.build.timestamp.format>
+        <timestamp>${maven.build.timestamp}</timestamp>
     </properties>
 
     <dependencies>
@@ -30,6 +32,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -68,6 +76,8 @@
                     </descriptorRefs>
                 </configuration>
             </plugin>
+
+
 
             <plugin>
                 <groupId>com.akathist.maven.plugins.launch4j</groupId>

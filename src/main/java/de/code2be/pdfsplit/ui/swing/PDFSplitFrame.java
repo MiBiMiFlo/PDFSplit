@@ -94,7 +94,7 @@ public class PDFSplitFrame extends JFrame
      */
     public PDFSplitFrame()
     {
-        super(I18n.getMessage(PDFSplitFrame.class, "TITLE"));
+        super(I18n.getMessage(PDFSplitFrame.class, "TITLE", I18n.getMessage(PDFSplitFrame.class, "version")));
         try
         {
             URL imgURL = getClass().getResource(
