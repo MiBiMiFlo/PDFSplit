@@ -151,6 +151,29 @@ public class PDFDocumentPanel extends JPanel
     }
 
 
+    public int getPageCount()
+    {
+        return mDocument.getNumberOfPages();
+    }
+
+
+    public int getEnabledPageCount()
+    {
+        int res = 0;
+        for (Component c : mMainPanel.getComponents())
+        {
+            if (c instanceof PDFPagePanel)
+            {
+                if (((PDFPagePanel) c).isPageEnabled())
+                {
+                    res++;
+                }
+            }
+        }
+        return res;
+    }
+
+
     public List<PDFPagePanel> getPagePanels()
     {
         List<PDFPagePanel> res = new ArrayList<>();

@@ -94,7 +94,8 @@ public class PDFSplitFrame extends JFrame
      */
     public PDFSplitFrame()
     {
-        super(I18n.getMessage(PDFSplitFrame.class, "TITLE", I18n.getMessage(PDFSplitFrame.class, "version")));
+        super(I18n.getMessage(PDFSplitFrame.class, "TITLE",
+                I18n.getMessage(PDFSplitFrame.class, "version")));
         try
         {
             URL imgURL = getClass().getResource(
@@ -305,6 +306,7 @@ public class PDFSplitFrame extends JFrame
         }
         catch (Exception ex)
         {
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
             showError(ex.getMessage(), "ERROR - Can not write config", ex);
         }
     }
@@ -577,9 +579,25 @@ public class PDFSplitFrame extends JFrame
             sb.append(I18n.getMessage(PDFSplitFrame.class,
                     "main.fileInfo.pages", aEvent.getPageCount()));
             sb.append("<br/>");
-            sb.append(I18n.getMessage(PDFSplitFrame.class,
-                    "main.fileInfo.processed", aEvent.getCurrentPage(),
-                    aEvent.getPageCount(), aEvent.getDocumentCount()));
+
+            if (aEvent.getID() == SplitStatusEvent.EVENT_SPLITTING_FINISHED)
+            {
+                int realPageCount = 0;
+                for (PDDocument doc : aEvent.getSource().getTargetDocuments())
+                {
+                    realPageCount += doc.getNumberOfPages();
+                }
+                sb.append(I18n.getMessage(PDFSplitFrame.class,
+                        "main.fileInfo.finished", realPageCount,
+                        aEvent.getDocumentCount()));
+            }
+            else
+            {
+                sb.append(I18n.getMessage(PDFSplitFrame.class,
+                        "main.fileInfo.processed",
+                        (aEvent.getCurrentPage() + 1),
+                        aEvent.getDocumentCount()));
+            }
             sb.append("<br/>");
         }
 
@@ -631,6 +649,7 @@ public class PDFSplitFrame extends JFrame
             }
             catch (Exception ex)
             {
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                 showError(ex.getMessage(), "ERROR - Closing old PDF File", ex);
             }
             finally
@@ -656,6 +675,7 @@ public class PDFSplitFrame extends JFrame
         }
         catch (Exception ex)
         {
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
             showError(ex.getMessage(), "ERROR - Open PDF File", ex);
         }
         finally

@@ -3,6 +3,8 @@ package de.code2be.pdfsplit;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -19,6 +21,9 @@ import org.apache.pdfbox.text.PDFTextStripper;
  */
 public class SmartSplitter
 {
+
+    private static final Logger LOGGER = Logger
+            .getLogger(SmartSplitter.class.getName());
 
     private PDDocument mSourceDoc;
 
@@ -39,6 +44,8 @@ public class SmartSplitter
     private ISplitStatusListener mListener;
 
     private volatile boolean mDoAbort = false;
+
+    private QRCodeExtractor mQRCodeExtractor;
 
     /**
      * 
@@ -143,52 +150,46 @@ public class SmartSplitter
     {
         sendStatusUpdate(SplitStatusEvent.EVENT_SPLITTING_STARTED, mSourceDoc);
 
-        for (PDPage page : mSourceDoc.getPages())
+        int startPage = Math.max(mStartPage, 0);
+        int endPage = Math.min(mEndPage, mSourceDoc.getNumberOfPages());
+
+        for (int pageIdx = startPage; pageIdx < endPage; pageIdx++)
         {
             if (mDoAbort)
             {
                 // abort processing.
                 break;
             }
-            if (mCurrentPage >= mEndPage)
+            mCurrentPage = pageIdx;
+            if (isSplitPage(mCurrentPage))
             {
-                break;
-            }
-            if (mCurrentPage >= mStartPage && mCurrentPage < mEndPage)
-            {
-                if (containsSplitText(page))
+                // current page contains the split text --> end of previous
+                // document (this page is dropped)
+                if (mTargetDoc != null)
                 {
-                    // current page contains the split text --> end of previous
-                    // document (this page is dropped)
-                    if (mTargetDoc != null)
-                    {
-                        sendStatusUpdate(
-                                SplitStatusEvent.EVENT_DOCUMENT_FINISHED,
-                                mTargetDoc);
-                    }
-                    mTargetDoc = null;
+                    sendStatusUpdate(SplitStatusEvent.EVENT_DOCUMENT_FINISHED,
+                            mTargetDoc);
                 }
-                else
+                mTargetDoc = null;
+            }
+            else
+            {
+                // not a split page --> include into target document
+                if (mTargetDoc == null)
                 {
-                    // not a split page --> include into target document
-                    if (mTargetDoc == null)
-                    {
-                        // no active target document --> create a new target
-                        // document
-                        mTargetDocs.add(mTargetDoc = PDFHelper
-                                .createNewDocument(getMemoryUsageSetting(),
-                                        getSourceDocument()));
-                        sendStatusUpdate(SplitStatusEvent.EVENT_NEW_DOCUMENT,
-                                mTargetDoc);
-                    }
+                    // no active target document --> create a new target
+                    // document
+                    mTargetDocs.add(mTargetDoc = PDFHelper.createNewDocument(
+                            getMemoryUsageSetting(), getSourceDocument()));
+                    sendStatusUpdate(SplitStatusEvent.EVENT_NEW_DOCUMENT,
+                            mTargetDoc);
+                }
 
-                    // import the page into the new target document
-                    PDFHelper.importPage(getTargetDocument(), page);
-                    sendStatusUpdate(SplitStatusEvent.EVENT_NEXT_PAGE,
-                            mSourceDoc);
-                }
+                // import the page into the new target document
+                PDFHelper.importPage(getTargetDocument(),
+                        mSourceDoc.getPage(pageIdx));
+                sendStatusUpdate(SplitStatusEvent.EVENT_NEXT_PAGE, mSourceDoc);
             }
-            mCurrentPage++;
         }
         if (mTargetDoc != null)
         {
@@ -234,17 +235,54 @@ public class SmartSplitter
      *            the page to check for the defined split text.
      * @return true if the split text was found, false otherwise.
      */
-    protected boolean containsSplitText(PDPage page)
+    protected boolean isSplitPage(PDPage page)
     {
-        String text = getTextofPage(mCurrentPage);
+        // TODO: map from given page to index
+        return isSplitPage(mCurrentPage);
+    }
+
+
+    protected boolean isSplitPage(int aPageIndex)
+    {
+        String text = getTextofPage(aPageIndex);
+        boolean textFound = true;
         for (String txt : mSplitTextArr)
         {
             if (!text.contains(txt))
             {
-                return false;
+                textFound = false;
             }
         }
-        return true;
+        if (textFound)
+        {
+            return true;
+        }
+
+        // if (text == null || text.trim().length() == 0)
+        {
+            if (mQRCodeExtractor == null)
+            {
+                mQRCodeExtractor = new QRCodeExtractor(mSourceDoc);
+            }
+            try
+            {
+                List<String> qrCodes = mQRCodeExtractor
+                        .extractQRCodesFrom(aPageIndex);
+                for (String qrCode : qrCodes)
+                {
+                    if (qrCode.equals("https://github.com/MiBiMiFlo/PDFSplit"))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (IOException ex)
+            {
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            }
+        }
+
+        return false;
     }
 
 
@@ -268,5 +306,11 @@ public class SmartSplitter
     protected final PDDocument getTargetDocument()
     {
         return mTargetDoc;
+    }
+
+
+    public List<PDDocument> getTargetDocuments()
+    {
+        return new ArrayList<>(mTargetDocs);
     }
 }
