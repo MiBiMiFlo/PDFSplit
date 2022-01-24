@@ -96,8 +96,8 @@ public class OCRFilter extends AbstractDocumentFilter
         try
         {
             PDFTextStripper ts = new PDFTextStripper();
-            ts.setStartPage(aPageIndex);
-            ts.setEndPage(aPageIndex);
+            ts.setStartPage(aPageIndex + 1);
+            ts.setEndPage(aPageIndex + 1);
             String text = ts.getText(aDocument);
             return text.trim().length() > 0;
         }
