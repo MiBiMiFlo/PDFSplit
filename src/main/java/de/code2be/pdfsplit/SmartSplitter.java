@@ -2,6 +2,7 @@ package de.code2be.pdfsplit;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -9,7 +10,8 @@ import java.util.logging.Logger;
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.text.PDFTextStripper;
+
+import de.code2be.pdfsplit.split.ISplitPageIdentifier;
 
 /**
  * This is an adapted version of the
@@ -25,85 +27,244 @@ public class SmartSplitter
     private static final Logger LOGGER = Logger
             .getLogger(SmartSplitter.class.getName());
 
+    /**
+     * The document that is to be split.
+     */
     private PDDocument mSourceDoc;
 
+    /**
+     * The current target document. This is the document new pages are imported
+     * to.
+     */
     private PDDocument mTargetDoc;
 
+    /**
+     * The index of the first page in {@link #mSourceDoc} to process. The first
+     * possible page is index 0.
+     */
     private int mStartPage = Integer.MIN_VALUE;
 
+    /**
+     * The index of the first page to not process anymore. If
+     * {@link #mStartPage} is 0, this is the number of pages to process.
+     */
     private int mEndPage = Integer.MAX_VALUE;
 
+    /**
+     * The list of target documents, the {@link #mSourceDoc} was already split
+     * into, This also contains {@link #mTargetDoc}.
+     */
     private List<PDDocument> mTargetDocs;
 
+    /**
+     * The index of the page that is currently processed.
+     */
     private int mCurrentPage;
 
+    /**
+     * The memory usage settings, that are to be applied for new documents
+     * {@link #mTargetDoc}.
+     */
     private MemoryUsageSetting mMemoryUsageSetting = null;
 
-    private String[] mSplitTextArr;
+    /**
+     * A flag to indicate if abort was requested. If this is set to true, the
+     * split process is aborted on next page.
+     */
+    private volatile boolean mAbort = false;
 
-    private ISplitStatusListener mListener;
+    /**
+     * The list of registered {@link ISplitStatusListener}'s.
+     */
+    private final List<ISplitStatusListener> mListeners = new ArrayList<>();
 
-    private volatile boolean mDoAbort = false;
-
-    private QRCodeExtractor mQRCodeExtractor;
+    /**
+     * The list of registered {@link ISplitPageIdentifier}'s.
+     */
+    private final List<ISplitPageIdentifier> mSplitPageIdentifiers = new ArrayList<>();
 
     /**
      * 
      * @return the number of target documents currently available.
      */
-    public int getDocumentCount()
+    public int getTargetDocumentCount()
     {
         return mTargetDocs != null ? mTargetDocs.size() : 0;
     }
 
 
-    public void setStatusListener(ISplitStatusListener aListener)
+    /**
+     * 
+     * @return a read only version of the target document list.
+     */
+    public List<PDDocument> getTargetDocuments()
     {
-        mListener = aListener;
+        return Collections.unmodifiableList(mTargetDocs);
     }
 
 
+    /**
+     * Add a new {@link ISplitPageIdentifier} instance to this splitter. No
+     * input checks are performed, except a null check, so it is possible to add
+     * the same identifier multiple times!
+     * 
+     * @param aIdentifier
+     *            the identifier to be added. If this is null, nothing is done.
+     */
+    public void addSplitPageIdentifier(ISplitPageIdentifier aIdentifier)
+    {
+        if (aIdentifier != null)
+        {
+            mSplitPageIdentifiers.add(aIdentifier);
+        }
+    }
+
+
+    /**
+     * Remove a previously added {@link ISplitPageIdentifier}.
+     * 
+     * @param aIdentifier
+     *            the identifier to be removed.
+     * @return true if the identifier was removed, false otherwise.
+     */
+    public boolean removeSplitPageIdentifier(ISplitPageIdentifier aIdentifier)
+    {
+        return mSplitPageIdentifiers.remove(aIdentifier);
+    }
+
+
+    /**
+     * 
+     * @return a read only list of the previously registered
+     *         {@link ISplitPageIdentifier}'s.
+     */
+    public List<ISplitPageIdentifier> getSplitPageIdentifiers()
+    {
+        return Collections.unmodifiableList(mSplitPageIdentifiers);
+    }
+
+
+    /**
+     * Add a new split status listener.
+     * 
+     * @param aListener
+     *            the listener to be added.
+     */
+    public void addStatusListener(ISplitStatusListener aListener)
+    {
+        if (aListener != null)
+        {
+            mListeners.add(aListener);
+        }
+    }
+
+
+    /**
+     * Remove a previously added status listener.
+     * 
+     * @param aListener
+     *            the listener to be removed.
+     * @return true if the listener was removed, false otherwise.
+     */
+    public boolean removeStatusListener(ISplitStatusListener aListener)
+    {
+        return mListeners.remove(aListener);
+    }
+
+
+    /**
+     * 
+     * @return a read only list of the currently registered status listeners.
+     */
+    public List<ISplitStatusListener> getStatusListeners()
+    {
+        return Collections.unmodifiableList(mListeners);
+    }
+
+
+    /**
+     * Sends a status update to all registered listeners.
+     * 
+     * @param aID
+     *            the id of the event to be send.
+     * @param aDocument
+     *            the document, this event is related to.
+     */
     protected void sendStatusUpdate(int aID, PDDocument aDocument)
     {
-        if (mListener == null)
+        if (mListeners.size() == 0)
         {
             return;
         }
 
-        SplitStatusEvent evt = new SplitStatusEvent(this, aID,
-                mSourceDoc.getNumberOfPages(), mCurrentPage,
-                mTargetDocs != null ? mTargetDocs.size() : 0, aDocument);
+        int docCount = mTargetDocs != null ? mTargetDocs.size() : 0;
+        final SplitStatusEvent evt = new SplitStatusEvent(this, aID,
+                mSourceDoc.getNumberOfPages(), mCurrentPage, docCount,
+                aDocument);
 
-        mListener.splitStatusUpdate(evt);
+        for (ISplitStatusListener l : mListeners)
+        {
+            try
+            {
+                l.splitStatusUpdate(evt);
+            }
+            catch (Exception ex)
+            {
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            }
+        }
     }
 
 
+    /**
+     * Request to abort current split operation. This can be called from any
+     * other thread but the one who called {@link #split(PDDocument)}, s this
+     * call is only useful while {@link #split(PDDocument)} is executing.
+     */
     public void doAbort()
     {
-        mDoAbort = true;
+        mAbort = true;
     }
 
 
+    /**
+     * 
+     * @return the currently assigned memory usage model.
+     */
     public MemoryUsageSetting getMemoryUsageSetting()
     {
         return mMemoryUsageSetting;
     }
 
 
+    /**
+     * Set a new memory usage model for creation of further target documents.
+     * 
+     * @param aMemoryUsageSetting
+     *            the new memory usage model. This can be null.
+     */
     public void setMemoryUsageSetting(MemoryUsageSetting aMemoryUsageSetting)
     {
         mMemoryUsageSetting = aMemoryUsageSetting;
     }
 
 
-    public List<PDDocument> split(PDDocument aDocument, String aSplitText)
-        throws IOException
+    /**
+     * Split the given documents.
+     * 
+     * @param aDocument
+     *            the document to be split.
+     * @return the list of documents, the given was was split into.
+     * @throws IOException
+     *             on internal errors.
+     */
+    public List<PDDocument> split(PDDocument aDocument) throws IOException
     {
         mCurrentPage = 0;
-        mTargetDocs = new ArrayList<PDDocument>();
         mTargetDoc = null;
+        mTargetDocs = new ArrayList<PDDocument>();
         mSourceDoc = aDocument;
-        mSplitTextArr = aSplitText.split("\\s+");
+        mAbort = false;
         processPages();
         return mTargetDocs;
     }
@@ -146,6 +307,12 @@ public class SmartSplitter
     }
 
 
+    /**
+     * Process pages while splitting.
+     * 
+     * @throws IOException
+     *             on internal error.
+     */
     protected void processPages() throws IOException
     {
         sendStatusUpdate(SplitStatusEvent.EVENT_SPLITTING_STARTED, mSourceDoc);
@@ -153,15 +320,22 @@ public class SmartSplitter
         int startPage = Math.max(mStartPage, 0);
         int endPage = Math.min(mEndPage, mSourceDoc.getNumberOfPages());
 
-        for (int pageIdx = startPage; pageIdx < endPage; pageIdx++)
+        mCurrentPage = -1;
+        for (PDPage page : getSourceDocument().getPages())
         {
-            if (mDoAbort)
+            mCurrentPage++;
+            if (mCurrentPage < startPage)
+            {
+                continue;
+            }
+
+            if (mAbort || mCurrentPage >= endPage)
             {
                 // abort processing.
                 break;
             }
-            mCurrentPage = pageIdx;
-            if (isSplitPage(mCurrentPage))
+
+            if (isSplitPage(page, mCurrentPage))
             {
                 // current page contains the split text --> end of previous
                 // document (this page is dropped)
@@ -186,8 +360,7 @@ public class SmartSplitter
                 }
 
                 // import the page into the new target document
-                PDFHelper.importPage(getTargetDocument(),
-                        mSourceDoc.getPage(pageIdx));
+                PDFHelper.importPage(getTargetDocument(), page);
                 sendStatusUpdate(SplitStatusEvent.EVENT_NEXT_PAGE, mSourceDoc);
             }
         }
@@ -203,80 +376,28 @@ public class SmartSplitter
 
 
     /**
-     * Retrieve all text of the page with
+     * Check if the given page is identified as a split page. This method uses
+     * the registered {@link ISplitPageIdentifier}'s to check if a page is a
+     * split page.
      * 
-     * @param aPageNumber
-     *            the page index (first page is index 0).
-     * @return the text of the given page or an empty string if text can not be
-     *         retrieved.
-     */
-    protected String getTextofPage(int aPageNumber)
-    {
-        PDFTextStripper reader;
-        try
-        {
-            reader = new PDFTextStripper();
-            reader.setStartPage(aPageNumber + 1);
-            reader.setEndPage(aPageNumber + 1);
-            return reader.getText(getSourceDocument());
-        }
-        catch (IOException ex)
-        {
-            ex.printStackTrace();
-        }
-        return "";
-    }
-
-
-    /**
-     * Check if the given page contains the defined split text.
-     * 
-     * @param page
+     * @param aPage
      *            the page to check for the defined split text.
+     * @param aPageIndex
+     *            the index of the page to check.
      * @return true if the split text was found, false otherwise.
      */
-    protected boolean isSplitPage(PDPage page)
+    protected boolean isSplitPage(PDPage aPage, int aPageIndex)
     {
-        // TODO: map from given page to index
-        return isSplitPage(mCurrentPage);
-    }
-
-
-    protected boolean isSplitPage(int aPageIndex)
-    {
-        String text = getTextofPage(aPageIndex);
-        boolean textFound = true;
-        for (String txt : mSplitTextArr)
+        for (ISplitPageIdentifier i : mSplitPageIdentifiers)
         {
-            if (!text.contains(txt))
-            {
-                textFound = false;
-            }
-        }
-        if (textFound)
-        {
-            return true;
-        }
-
-        // if (text == null || text.trim().length() == 0)
-        {
-            if (mQRCodeExtractor == null)
-            {
-                mQRCodeExtractor = new QRCodeExtractor(mSourceDoc);
-            }
             try
             {
-                List<String> qrCodes = mQRCodeExtractor
-                        .extractQRCodesFrom(aPageIndex);
-                for (String qrCode : qrCodes)
+                if (i.isSplitPage(mSourceDoc, aPage, aPageIndex))
                 {
-                    if (qrCode.equals("https://github.com/MiBiMiFlo/PDFSplit"))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
-            catch (IOException ex)
+            catch (Exception ex)
             {
                 LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
             }
@@ -308,9 +429,4 @@ public class SmartSplitter
         return mTargetDoc;
     }
 
-
-    public List<PDDocument> getTargetDocuments()
-    {
-        return new ArrayList<>(mTargetDocs);
-    }
 }
