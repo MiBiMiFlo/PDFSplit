@@ -66,6 +66,17 @@ public class TextSplitIdentifierOCR extends TextSplitIdentifier
 
     /**
      * 
+     * @param aTesseract
+     *            the tesseract instance to be used for OCR.
+     */
+    public void setTesseract(Tesseract aTesseract)
+    {
+        mTesseract = aTesseract;
+    }
+
+
+    /**
+     * 
      * @return the force OCR flag value.
      */
     public boolean isForceOCR()
