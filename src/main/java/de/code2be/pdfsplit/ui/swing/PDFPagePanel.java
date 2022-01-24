@@ -38,10 +38,6 @@ public class PDFPagePanel extends JComponent
 
     private boolean mEnabled = true;
 
-    private long mImageValue = -1;
-
-    private boolean mCalcImageValue = false;
-
     public PDFPagePanel(PDFDocumentPanel aDocPanel, PDPage aPage,
             int aPageIndex)
     {
@@ -66,12 +62,6 @@ public class PDFPagePanel extends JComponent
     public boolean isPageEnabled()
     {
         return mEnabled;
-    }
-
-
-    public long getImageValue()
-    {
-        return mImageValue;
     }
 
 
@@ -105,35 +95,10 @@ public class PDFPagePanel extends JComponent
     }
 
 
-    protected long calcImageValue(BufferedImage aImage)
-    {
-        long imgVal = 0;
-        int imgWidth = aImage.getWidth();
-        int imgHeight = aImage.getHeight();
-        for (int y = 0; y < imgHeight; y++)
-        {
-            long lineVal = 0;
-            for (int x = 0; x < imgWidth; x++)
-            {
-                int val = aImage.getRGB(x, y);
-                lineVal += (val & 0xFF);
-                lineVal += ((val >> 8) & 0xFF);
-                lineVal += ((val >> 16) & 0xFF);
-            }
-            imgVal += (lineVal / 3);
-            // TOOD: check if dark enought to stop now
-        }
-        long pxCount = (long) imgWidth * (long) imgHeight;
-        imgVal = imgVal / pxCount;
-        return imgVal;
-    }
-
-
     protected void doRenderImage()
     {
         BufferedImage img = null;
         Dimension prefSize = getPreferredSize();
-        long imgVal = 0;
         try
         {
             PDRectangle mediaBox = mPage.getMediaBox();
@@ -146,10 +111,6 @@ public class PDFPagePanel extends JComponent
 
             img = rdr.renderImageWithDPI(mPageIndex, (float) (72.0d / scale));
 
-            if (mCalcImageValue)
-            {
-                imgVal = calcImageValue(img);
-            }
         }
         catch (Exception ex)
         {
@@ -166,7 +127,6 @@ public class PDFPagePanel extends JComponent
             {
                 mPageImage = img;
                 mRendering = false;
-                mImageValue = imgVal;
                 SwingUtilities.invokeLater(() -> repaint());
             }
         }
@@ -197,6 +157,8 @@ public class PDFPagePanel extends JComponent
         Graphics g = aG.create();
         try
         {
+            //TODO: possibly use direct rendering into Graphics
+            // how is performance for this?
             ensureRendered();
             int x = 0;
             int y = 0;
