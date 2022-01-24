@@ -34,6 +34,11 @@ import de.code2be.help.I18n;
 import de.code2be.pdfsplit.ISplitStatusListener;
 import de.code2be.pdfsplit.SmartSplitter;
 import de.code2be.pdfsplit.SplitStatusEvent;
+import de.code2be.pdfsplit.filters.DocumentFilterEvent;
+import de.code2be.pdfsplit.filters.OCRFilter;
+import de.code2be.pdfsplit.split.QRCodeIdentifier;
+import de.code2be.pdfsplit.split.TextSplitIdentifier;
+import de.code2be.pdfsplit.split.TextSplitIdentifierOCR;
 import de.code2be.pdfsplit.ui.swing.actions.DeleteDocumentAction;
 import de.code2be.pdfsplit.ui.swing.actions.OpenFileAction;
 import de.code2be.pdfsplit.ui.swing.actions.RenameAction;
@@ -43,6 +48,7 @@ import de.code2be.pdfsplit.ui.swing.actions.SaveAsAction;
 import de.code2be.pdfsplit.ui.swing.actions.ShowSettingsAction;
 import de.code2be.pdfsplit.ui.swing.actions.ZoomInAction;
 import de.code2be.pdfsplit.ui.swing.actions.ZoomOutAction;
+import net.sourceforge.tess4j.Tesseract;
 
 /**
  * This is the main frame class. It holds basic methods to do all required
@@ -59,13 +65,29 @@ public class PDFSplitFrame extends JFrame
     private static final Logger LOGGER = Logger
             .getLogger(PDFSplitFrame.class.getName());
 
-    public static final String DEFAULT_SEP = "$PWKM%U?5X4$";
+    public static final String DEFAULT_SEP = "$PWKM%U?5X4$;PDF-SPLIT-SPLIT-PAGE;PDF-SPLIT-TRENNSEITE";
 
-    public static final String PROP_DIRECTORY_OPEN = "DIR_OPEN";
+    public static final String DEFAULT_QR_CODE = "https://github.com/MiBiMiFlo/PDFSplit";
 
-    public static final String PROP_DIRECTORY_SAVE = "DIR_SAVE";
+    public static final String PROP_DIRECTORY_OPEN = "main.dirOpen";
 
-    public static final String PROP_SEPARATOR = "SEPARATOR";
+    public static final String PROP_DIRECTORY_SAVE = "main.dirSave";
+
+    public static final String PROP_SEPARATOR = "main.separator.text";
+
+    public static final String PROP_SEPARATOR_MATCH_COUNT = "main.separator.matchCount";
+
+    public static final String PROP_QR_CODE = "main.separator.qrcode";
+
+    public static final String PROP_SEPARATOR_TEXT = "main.separator.text";
+
+    public static final String PROP_DO_OCR = "main.separator.doOCR";
+
+    public static final String PROP_FORCE_OCR = "main.separator.forceOCR";
+
+    public static final String PROP_OCR_DATAPATH = "filter.ocr.datapath";
+
+    public static final String PROP_OCR_LANG = "filter.ocr.language";
 
     private File mPDFFile;
 
@@ -166,12 +188,18 @@ public class PDFSplitFrame extends JFrame
     {
         Properties res = new Properties();
         res.put(PROP_SEPARATOR, DEFAULT_SEP);
+        res.put(PROP_SEPARATOR_MATCH_COUNT, String.valueOf(1));
         String exedir = System.getProperty("launch4j.exedir");
         if (exedir == null)
         {
             exedir = new File(".").getAbsolutePath();
         }
         res.put(PROP_DIRECTORY_OPEN, exedir);
+        res.put(PROP_DO_OCR, String.valueOf(true));
+        res.put(PROP_FORCE_OCR, String.valueOf(false));
+        res.put(PROP_QR_CODE, DEFAULT_QR_CODE);
+        res.put(PROP_OCR_DATAPATH, "./tessdata");
+        res.put(PROP_OCR_LANG, "deu+eng");
         return res;
     }
 
@@ -610,6 +638,29 @@ public class PDFSplitFrame extends JFrame
 
 
     /**
+     * 
+     * @return a new instance of configured OCR engine.
+     */
+    protected Tesseract createOCREngine()
+    {
+        File dataPath = new File(getConfig().getProperty(PROP_OCR_DATAPATH));
+
+        String language = getConfig().getProperty(PROP_OCR_LANG).toString();
+
+        Tesseract tesseract = new Tesseract();
+        if (dataPath.isDirectory())
+        {
+            tesseract.setDatapath(dataPath.getAbsolutePath());
+        }
+
+        tesseract.setLanguage(language);
+        // tesseract.setOcrEngineMode(TessOcrEngineMode.OEM_TESSERACT_ONLY);
+
+        return tesseract;
+    }
+
+
+    /**
      * Open a PDF file and split it into multiple documents. This method is
      * blocking and should not be called from within the AWT thread. All UI
      * modifications are ensured to be called from within the AWT thread in an
@@ -663,15 +714,86 @@ public class PDFSplitFrame extends JFrame
         {
             mPDFFile = aFile;
             updateFileInfoLabel(null);
-            setStatusText("Reading file " + mPDFFile.getAbsolutePath());
+            setStatusText(I18n.getMessage(PDFSplitFrame.class,
+                    "open.msgWillOpen", mPDFFile.getAbsolutePath()));
             mPDFDocument = PDDocument.load(mPDFFile);
+            if (String.valueOf(true).equals(
+                    getConfig().getProperty(PROP_DO_OCR, String.valueOf(true))))
+            {
+                OCRFilter ocrFilter = new OCRFilter(createOCREngine());
+                ocrFilter.addDocumentFilterListener((aEvent) -> {
+                    if (aEvent.getID() == DocumentFilterEvent.EVENT_NEXT_PAGE)
+                    {
+                        setStatusText(I18n.getMessage(PDFSplitFrame.class,
+                                "open.msgOCR", mPDFFile.getName(),
+                                aEvent.getPageIndex() + 1,
+                                aEvent.getPageCount()));
+                    }
+                });
+                mPDFDocument = ocrFilter.filter(mPDFDocument);
+            }
+            setStatusText(I18n.getMessage(PDFSplitFrame.class,
+                    "open.msgSplitting", mPDFFile.getAbsolutePath()));
 
-            setStatusText("Splitting File " + mPDFFile.getAbsolutePath());
             String sepStr = getConfig().getProperty(PROP_SEPARATOR);
+            String[] sepArr = sepStr.split(";");
+            int reqFindCount = 1;
+            try
+            {
+                reqFindCount = Integer.valueOf(
+                        getConfig().getProperty(PROP_SEPARATOR_MATCH_COUNT, "1")
+                                .toString());
+            }
+            catch (Exception ex)
+            {
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            }
+
             mSmartSplitter = new SmartSplitter();
-            mSmartSplitter.setStatusListener(mSplitListener);
-            mSmartSplitter.split(mPDFDocument, sepStr);
-            setStatusText("File " + mPDFFile.getAbsolutePath() + " opened.");
+            mSmartSplitter.addStatusListener(mSplitListener);
+
+            if (sepStr != null && sepStr.trim().length() > 0)
+            {
+                if (String.valueOf(true).equals(getConfig()
+                        .getProperty(PROP_DO_OCR, String.valueOf(true))))
+                {
+                    boolean forceOCR = String.valueOf(true).equals(getConfig()
+                            .getProperty(PROP_FORCE_OCR, String.valueOf(true)));
+
+                    LOGGER.log(Level.INFO,
+                            "Will use OCR based text splitter for: {0} (findCount= {1}, ForceOCR={2})",
+                            new Object[]
+                            {
+                                    sepStr, reqFindCount, forceOCR
+                            });
+                    mSmartSplitter.addSplitPageIdentifier(
+                            new TextSplitIdentifierOCR(sepArr, reqFindCount,
+                                    forceOCR));
+                }
+                else
+                {
+                    LOGGER.log(Level.INFO,
+                            "Will use normal text splitter for: {0} (findCount={1})",
+                            new Object[]
+                            {
+                                    sepStr, reqFindCount
+                            });
+                    mSmartSplitter.addSplitPageIdentifier(
+                            new TextSplitIdentifier(sepArr, reqFindCount));
+                }
+            }
+
+            String qrCode = getConfig().getProperty(PROP_QR_CODE, null);
+            if (qrCode != null && qrCode.trim().length() > 0)
+            {
+                LOGGER.log(Level.INFO, "Will use QR code splitter for: {0}",
+                        qrCode);
+                mSmartSplitter
+                        .addSplitPageIdentifier(new QRCodeIdentifier(qrCode));
+            }
+            setStatusText(
+                    "Will split file " + mPDFFile.getAbsolutePath() + ".");
+            mSmartSplitter.split(mPDFDocument);
         }
         catch (Exception ex)
         {
