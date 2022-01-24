@@ -12,6 +12,7 @@ import javax.swing.UIManager;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 
+import de.code2be.pdfsplit.split.TextSplitIdentifier;
 import de.code2be.pdfsplit.ui.swing.PDFSplitFrame;
 
 public class PDFSplitter
@@ -107,7 +108,12 @@ public class PDFSplitter
         int pgCount = doc.getNumberOfPages();
         System.out.println("Found " + pgCount + " pages!");
 
-        List<PDDocument> allDocs = new SmartSplitter().split(doc, aSeparator);
+        SmartSplitter ss = new SmartSplitter();
+        ss.addSplitPageIdentifier(new TextSplitIdentifier(new String[]
+        {
+                aSeparator
+        }, 1));
+        List<PDDocument> allDocs = ss.split(doc);
 
         System.out.println("Found " + allDocs.size() + " documents!");
 
