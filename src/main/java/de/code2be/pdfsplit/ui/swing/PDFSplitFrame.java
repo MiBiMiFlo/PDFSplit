@@ -73,21 +73,21 @@ public class PDFSplitFrame extends JFrame
 
     public static final String PROP_DIRECTORY_SAVE = "main.dirSave";
 
-    public static final String PROP_SEPARATOR = "main.separator.text";
+    public static final String PROP_SEPARATOR_TEXT = "separator.text";
 
-    public static final String PROP_SEPARATOR_MATCH_COUNT = "main.separator.matchCount";
+    public static final String PROP_SEPARATOR_MATCH_COUNT = "separator.matchCount";
 
-    public static final String PROP_QR_CODE = "main.separator.qrcode";
+    public static final String PROP_SEPARATOR_QR_CODE = "separator.qrcode";
 
-    public static final String PROP_SEPARATOR_TEXT = "main.separator.text";
+    public static final String PROP_SEPARATOR_DO_OCR = "separator.doOCR";
 
-    public static final String PROP_DO_OCR = "main.separator.doOCR";
+    public static final String PROP_SEPARATOR_FORCE_OCR = "separator.forceOCR";
 
-    public static final String PROP_FORCE_OCR = "main.separator.forceOCR";
+    public static final String PROP_FILTER_DO_OCR = "filter.doOCR";
 
-    public static final String PROP_OCR_DATAPATH = "filter.ocr.datapath";
+    public static final String PROP_OCR_DATAPATH = "ocr.datapath";
 
-    public static final String PROP_OCR_LANG = "filter.ocr.language";
+    public static final String PROP_OCR_LANG = "ocr.language";
 
     private File mPDFFile;
 
@@ -187,7 +187,7 @@ public class PDFSplitFrame extends JFrame
     protected Properties createDefaultConfig()
     {
         Properties res = new Properties();
-        res.put(PROP_SEPARATOR, DEFAULT_SEP);
+        res.put(PROP_SEPARATOR_TEXT, DEFAULT_SEP);
         res.put(PROP_SEPARATOR_MATCH_COUNT, String.valueOf(1));
         String exedir = System.getProperty("launch4j.exedir");
         if (exedir == null)
@@ -195,9 +195,12 @@ public class PDFSplitFrame extends JFrame
             exedir = new File(".").getAbsolutePath();
         }
         res.put(PROP_DIRECTORY_OPEN, exedir);
-        res.put(PROP_DO_OCR, String.valueOf(true));
-        res.put(PROP_FORCE_OCR, String.valueOf(false));
-        res.put(PROP_QR_CODE, DEFAULT_QR_CODE);
+        res.put(PROP_SEPARATOR_DO_OCR, String.valueOf(true));
+        res.put(PROP_SEPARATOR_FORCE_OCR, String.valueOf(false));
+
+        res.put(PROP_FILTER_DO_OCR, String.valueOf(true));
+
+        res.put(PROP_SEPARATOR_QR_CODE, DEFAULT_QR_CODE);
         res.put(PROP_OCR_DATAPATH, "./tessdata");
         res.put(PROP_OCR_LANG, "deu+eng");
         return res;
@@ -426,23 +429,6 @@ public class PDFSplitFrame extends JFrame
     public void setConfig(Properties aProperties)
     {
         mConfig = (Properties) aProperties.clone();
-    }
-
-
-    /**
-     * Set the new separator text to be used.
-     * 
-     * @param aText
-     *            the new separator text to be used. If this is null the default
-     *            separator text will be used.
-     */
-    public void setSeparatorText(String aText)
-    {
-        if (aText == null)
-        {
-            aText = DEFAULT_SEP;
-        }
-        getConfig().setProperty(PROP_SEPARATOR, aText);
     }
 
 
@@ -717,8 +703,8 @@ public class PDFSplitFrame extends JFrame
             setStatusText(I18n.getMessage(PDFSplitFrame.class,
                     "open.msgWillOpen", mPDFFile.getAbsolutePath()));
             mPDFDocument = PDDocument.load(mPDFFile);
-            if (String.valueOf(true).equals(
-                    getConfig().getProperty(PROP_DO_OCR, String.valueOf(true))))
+            if (String.valueOf(true).equals(getConfig()
+                    .getProperty(PROP_FILTER_DO_OCR, String.valueOf(true))))
             {
                 OCRFilter ocrFilter = new OCRFilter(createOCREngine());
                 ocrFilter.addDocumentFilterListener((aEvent) -> {
@@ -735,7 +721,7 @@ public class PDFSplitFrame extends JFrame
             setStatusText(I18n.getMessage(PDFSplitFrame.class,
                     "open.msgSplitting", mPDFFile.getAbsolutePath()));
 
-            String sepStr = getConfig().getProperty(PROP_SEPARATOR);
+            String sepStr = getConfig().getProperty(PROP_SEPARATOR_TEXT);
             String[] sepArr = sepStr.split(";");
             int reqFindCount = 1;
             try
@@ -754,11 +740,13 @@ public class PDFSplitFrame extends JFrame
 
             if (sepStr != null && sepStr.trim().length() > 0)
             {
-                if (String.valueOf(true).equals(getConfig()
-                        .getProperty(PROP_DO_OCR, String.valueOf(true))))
+                if (String.valueOf(true).equals(getConfig().getProperty(
+                        PROP_SEPARATOR_DO_OCR, String.valueOf(true))))
                 {
-                    boolean forceOCR = String.valueOf(true).equals(getConfig()
-                            .getProperty(PROP_FORCE_OCR, String.valueOf(true)));
+                    boolean forceOCR = String.valueOf(true)
+                            .equals(getConfig().getProperty(
+                                    PROP_SEPARATOR_FORCE_OCR,
+                                    String.valueOf(true)));
 
                     LOGGER.log(Level.INFO,
                             "Will use OCR based text splitter for: {0} (findCount= {1}, ForceOCR={2})",
@@ -766,9 +754,10 @@ public class PDFSplitFrame extends JFrame
                             {
                                     sepStr, reqFindCount, forceOCR
                             });
-                    mSmartSplitter.addSplitPageIdentifier(
-                            new TextSplitIdentifierOCR(sepArr, reqFindCount,
-                                    forceOCR));
+                    TextSplitIdentifierOCR ocrSplitter = new TextSplitIdentifierOCR(
+                            sepArr, reqFindCount, forceOCR);
+                    ocrSplitter.setTesseract(createOCREngine());
+                    mSmartSplitter.addSplitPageIdentifier(ocrSplitter);
                 }
                 else
                 {
@@ -783,7 +772,8 @@ public class PDFSplitFrame extends JFrame
                 }
             }
 
-            String qrCode = getConfig().getProperty(PROP_QR_CODE, null);
+            String qrCode = getConfig().getProperty(PROP_SEPARATOR_QR_CODE,
+                    null);
             if (qrCode != null && qrCode.trim().length() > 0)
             {
                 LOGGER.log(Level.INFO, "Will use QR code splitter for: {0}",
