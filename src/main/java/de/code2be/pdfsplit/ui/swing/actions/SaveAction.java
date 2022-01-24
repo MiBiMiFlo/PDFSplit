@@ -19,6 +19,17 @@ public class SaveAction extends BasicAction
     }
 
 
+    protected void performSave(PDFDocumentPanel aPanel)
+    {
+        mFrame.setStatusText(getMessageForSubKey("msgWillSave",
+                aPanel.getFile().getAbsolutePath()));
+
+        aPanel.save();
+        mFrame.setStatusText(getMessageForSubKey("msgSaved",
+                aPanel.getFile().getAbsolutePath()));
+    }
+
+
     @Override
     public void actionPerformed(ActionEvent aE)
     {
@@ -29,6 +40,7 @@ public class SaveAction extends BasicAction
             mFrame.setStatusText(getMessageForSubKey("errorNoPanel"));
             return;
         }
-        panel.save();
+        Thread t = new Thread(() -> performSave(panel));
+        t.start();
     }
 }

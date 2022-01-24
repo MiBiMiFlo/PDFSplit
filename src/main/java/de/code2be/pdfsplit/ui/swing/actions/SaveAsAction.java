@@ -23,6 +23,16 @@ public class SaveAsAction extends BasicAction
     }
 
 
+    protected void performSaveAs(PDFDocumentPanel aPanel, File aFile)
+    {
+        mFrame.setStatusText(
+                getMessageForSubKey("msgWillSave", aFile.getAbsolutePath()));
+        aPanel.saveAs(aFile);
+        mFrame.setStatusText(
+                getMessageForSubKey("msgSaved", aFile.getAbsolutePath()));
+    }
+
+
     @Override
     public void actionPerformed(ActionEvent aE)
     {
@@ -35,8 +45,8 @@ public class SaveAsAction extends BasicAction
 
         File curFile = panel.getFile();
         JFileChooser chooser = new JFileChooser(curFile.getParentFile());
-        chooser.addChoosableFileFilter(
-                new FileExtensionFilter(".pdf", "PDF Files (*.pdf)"));
+        chooser.addChoosableFileFilter(new FileExtensionFilter(".pdf",
+                getMessageForSubKey("pdfFilter")));
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         chooser.setAcceptAllFileFilterUsed(false);
 
@@ -47,6 +57,8 @@ public class SaveAsAction extends BasicAction
             File newFile = chooser.getSelectedFile();
             if (newFile != null)
             {
+                Thread t = new Thread(() -> performSaveAs(panel, newFile));
+                t.start();
                 panel.saveAs(newFile);
             }
 
