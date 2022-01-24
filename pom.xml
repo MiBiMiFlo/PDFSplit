@@ -17,6 +17,7 @@
         <timestamp>${maven.build.timestamp}</timestamp>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.reportEncoding>UTF-8</project.build.reportEncoding>
+        <ui.mainclass>de.code2be.pdfsplit.ui.swing.PDFSplitFrame</ui.mainclass>
     </properties>
 
     <dependencies>
@@ -43,7 +44,43 @@
             <artifactId>javase</artifactId>
             <version>3.4.1</version>
         </dependency>
-
+        <!-- We use tesseract to do OCR -->
+        <dependency>
+            <groupId>net.sourceforge.tess4j</groupId>
+            <artifactId>tess4j</artifactId>
+            <version>5.1.0</version>
+            <exclusions>
+                <!-- We only use basic OCR features, so we don't need all dependencies -->
+                <exclusion>
+                    <artifactId>com.itextpdf</artifactId>
+                    <groupId>itext</groupId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.ghost4j</groupId>
+                    <artifactId>ghost4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.pdfbox</groupId>
+                    <artifactId>pdfbox-tools</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.pdfbox</groupId>
+                    <artifactId>pdfbox-debugger</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.pdfbox</groupId>
+                    <artifactId>jbig2-imageio</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-io</groupId>
+                    <artifactId>commons-io</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jboss</groupId>
+                    <artifactId>jboss-vfs</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
@@ -69,7 +106,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>libs/</classpathPrefix>
-                            <mainClass>de.code2be.pdfsplit.PDFSplitter</mainClass>
+                            <mainClass>${ui.mainclass}</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -90,11 +127,13 @@
                     <descriptors>
                         <descriptor>src/assembly/src.xml</descriptor>
                     </descriptors>
+                    <archive>
+                        <manifest>
+                            <mainClass>${ui.mainclass}</mainClass>
+                        </manifest>
+                    </archive>
                 </configuration>
-
             </plugin>
-
-
 
             <plugin>
                 <groupId>com.akathist.maven.plugins.launch4j</groupId>
@@ -108,11 +147,12 @@
                         <configuration>
                             <headerType>gui</headerType>
                             <outfile>target/${project.name}-${project.version}.exe</outfile>
-                            <jar>target/${project.name}-${project.version}-jar-with-dependencies.jar</jar>
+                            <jar>target/${project.name}-${project.version}-aio.jar</jar>
+                            <dontWrapJar>true</dontWrapJar>
                             <errTitle>${project.name} - Error</errTitle>
                             <icon>src/main/resources/pdfsplit.ico</icon>
                             <classPath>
-                                <mainClass>de.code2be.pdfsplit.PDFSplitter</mainClass>
+                                <mainClass>${ui.mainclass}</mainClass>
                                 <addDependencies>true</addDependencies>
                             </classPath>
                             <jre>
@@ -144,6 +184,27 @@
                                 <originalFilename>${project.name}-${project.version}.exe</originalFilename>
                                 <language>ENGLISH_US</language>
                             </versionInfo>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/libs</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>false</overWriteSnapshots>
+                            <overWriteIfNewer>true</overWriteIfNewer>
                         </configuration>
                     </execution>
                 </executions>
