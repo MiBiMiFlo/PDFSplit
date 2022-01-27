@@ -1,10 +1,12 @@
 package de.code2be.pdfsplit.ui.swing.actions;
 
 import java.awt.event.ActionEvent;
+import java.util.Properties;
 
 import javax.swing.JOptionPane;
 
 import de.code2be.pdfsplit.ui.swing.PDFSplitFrame;
+import de.code2be.pdfsplit.ui.swing.PDFSplitSettingsPanel;
 
 public class ShowSettingsAction extends BasicAction
 {
@@ -23,8 +25,18 @@ public class ShowSettingsAction extends BasicAction
     @Override
     public void actionPerformed(ActionEvent aE)
     {
-        JOptionPane.showMessageDialog(mFrame, "Not Implemented!");
+        PDFSplitSettingsPanel settings = new PDFSplitSettingsPanel();
+        Properties cfg = mFrame.getConfig();
+        settings.initialize(cfg);
 
+        int res = JOptionPane.showConfirmDialog(mFrame, settings, "Settings",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (res == JOptionPane.OK_OPTION)
+        {
+            settings.saveTo(cfg);
+            mFrame.setConfig(cfg);
+            mFrame.saveConfig();
+        }
     }
 
 }
