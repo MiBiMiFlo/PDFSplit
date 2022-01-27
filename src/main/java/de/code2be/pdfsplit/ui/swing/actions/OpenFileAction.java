@@ -34,8 +34,8 @@ public class OpenFileAction extends BasicAction
      */
     protected File getCurrentDirectory()
     {
-        String dir = mFrame.getConfig()
-                .getProperty(PDFSplitFrame.PROP_DIRECTORY_OPEN);
+        String dir = mFrame.getConfigValS(PDFSplitFrame.PROP_DIRECTORY_OPEN,
+                null);
         if (dir != null)
         {
             return new File(dir);

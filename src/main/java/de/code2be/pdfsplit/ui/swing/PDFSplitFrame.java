@@ -31,6 +31,9 @@ import javax.swing.UIManager;
 import org.apache.pdfbox.pdmodel.PDDocument;
 
 import de.code2be.help.I18n;
+import de.code2be.help.TesseractC;
+import de.code2be.help.TesseractFactory;
+import de.code2be.pdfsplit.EmptyPageChecker;
 import de.code2be.pdfsplit.ISplitStatusListener;
 import de.code2be.pdfsplit.SmartSplitter;
 import de.code2be.pdfsplit.SplitStatusEvent;
@@ -48,7 +51,7 @@ import de.code2be.pdfsplit.ui.swing.actions.SaveAsAction;
 import de.code2be.pdfsplit.ui.swing.actions.ShowSettingsAction;
 import de.code2be.pdfsplit.ui.swing.actions.ZoomInAction;
 import de.code2be.pdfsplit.ui.swing.actions.ZoomOutAction;
-import net.sourceforge.tess4j.Tesseract;
+import net.sourceforge.tess4j.ITessAPI.TessOcrEngineMode;
 
 /**
  * This is the main frame class. It holds basic methods to do all required
@@ -73,21 +76,41 @@ public class PDFSplitFrame extends JFrame
 
     public static final String PROP_DIRECTORY_SAVE = "main.dirSave";
 
+    public static final String PROP_SEPARATOR_USE_TEXT = "separator.useText";
+
+    public static final String PROP_SEPARATOR_USE_QR = "separator.useQR";
+
     public static final String PROP_SEPARATOR_TEXT = "separator.text";
 
     public static final String PROP_SEPARATOR_MATCH_COUNT = "separator.matchCount";
 
     public static final String PROP_SEPARATOR_QR_CODE = "separator.qrcode";
 
-    public static final String PROP_SEPARATOR_DO_OCR = "separator.doOCR";
+    public static final String PROP_SEPARATOR_DO_OCR = "separator.ocr.enable";
 
-    public static final String PROP_SEPARATOR_FORCE_OCR = "separator.forceOCR";
+    public static final String PROP_SEPARATOR_FORCE_OCR = "separator.ocr.force";
 
-    public static final String PROP_FILTER_DO_OCR = "filter.doOCR";
+    public static final String PROP_FILTER_DO_OCR = "filter.ocr.enable";
+
+    public static final String PROP_FILTER_DO_EMPTY_PAGE = "filter.emptyPage.enable";
+
+    public static final String PROP_FILTER_EMPTY_PAGE_TH_PIXEL = "filter.emptyPage.th.pixel";
+
+    public static final String PROP_FILTER_EMPTY_PAGE_TH_BLOCK = "filter.emptyPage.th.block";
+
+    public static final String PROP_FILTER_EMPTY_PAGE_TH_PAGE = "filter.emptyPage.th.page";
+
+    public static final String PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_H = "filter.emptyPage.blockCountH";
+
+    public static final String PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_V = "filter.emptyPage.blockCountV";
 
     public static final String PROP_OCR_DATAPATH = "ocr.datapath";
 
     public static final String PROP_OCR_LANG = "ocr.language";
+
+    public static final String PROP_OCR_ENGINE_MODE = "ocr.engineMode";
+
+    public static final String PROP_OCR_IMG_SCALE = "ocr.scale";
 
     private File mPDFFile;
 
@@ -98,8 +121,6 @@ public class PDFSplitFrame extends JFrame
     private JLabel mLblFileInfo;
 
     private JTextField mStatusBar;
-
-    private SmartSplitter mSmartSplitter;
 
     private JTabbedPane mDocsPane;
 
@@ -199,62 +220,82 @@ public class PDFSplitFrame extends JFrame
         res.put(PROP_SEPARATOR_FORCE_OCR, String.valueOf(false));
 
         res.put(PROP_FILTER_DO_OCR, String.valueOf(true));
+        res.put(PROP_SEPARATOR_USE_TEXT, String.valueOf(true));
+        res.put(PROP_SEPARATOR_USE_QR, String.valueOf(true));
 
         res.put(PROP_SEPARATOR_QR_CODE, DEFAULT_QR_CODE);
         res.put(PROP_OCR_DATAPATH, "./tessdata");
         res.put(PROP_OCR_LANG, "deu+eng");
+        res.put(PROP_OCR_ENGINE_MODE, "3");
+        res.put(PROP_OCR_IMG_SCALE, "2.5");
+
+        res.put(PROP_FILTER_DO_EMPTY_PAGE, String.valueOf(true));
+        res.put(PROP_FILTER_EMPTY_PAGE_TH_PIXEL, "25");
+        res.put(PROP_FILTER_EMPTY_PAGE_TH_BLOCK, "2");
+        res.put(PROP_FILTER_EMPTY_PAGE_TH_PIXEL, "6");
+        res.put(PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_H, "10");
+        res.put(PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_V, "10");
+
         return res;
     }
 
 
     /**
-     * Retrieve the config file that stores the application config. The logic is
-     * to return the first existing file from the following list:
+     * Retrieve the config files that stores the application config. The logic
+     * is to return only existing config files in the order of the following
+     * list:
      * <ul>
-     * <li>${HOME}/pdfsplit.cfg
-     * <li>${HOME}/.pdfsplit.cfg
-     * <li>${USERPROFILE}/pdfsplit.cfg
-     * <li>${USERPROFILE}/.pdfsplit.cfg
      * <li>./pdfsplit.cfg
+     * <li>${HOME}/.pdfsplit.cfg
+     * <li>${HOME}/pdfsplit.cfg
+     * <li>${USERPROFILE}/.pdfsplit.cfg
+     * <li>${USERPROFILE}/pdfsplit.cfg
      * </ul>
+     * In case a config entry is available in multiple existing config files,
+     * the entry in the last file of the list takes effect.
      * 
-     * @return the config file to be used if found or null if no config file can
-     *         be found.
+     * @return the config files to be used. Might be an empty list.
      */
-    protected File getConfigFile()
+    protected List<File> getConfigFiles()
     {
+        List<File> res = new ArrayList<>();
         String profileDir = ".";
-        File f = null;
+        File f = new File(".", "pdfsplit.cfg").getAbsoluteFile();
+        if (f.isFile())
+        {
+            res.add(f);
+        }
+
         if (System.getenv().containsKey("HOME"))
         {
             profileDir = System.getenv("HOME");
-            f = new File(profileDir, "pdfsplit.cfg");
-            if (f.isFile())
-            {
-                return f;
-            }
             f = new File(profileDir, ".pdfsplit.cfg");
             if (f.isFile())
             {
-                return f;
+                res.add(f);
+            }
+
+            f = new File(profileDir, "pdfsplit.cfg");
+            if (f.isFile())
+            {
+                res.add(f);
             }
         }
-        else if (System.getenv().containsKey("USERPROFILE"))
+        if (System.getenv().containsKey("USERPROFILE"))
         {
             profileDir = System.getenv("USERPROFILE");
             f = new File(profileDir, "pdfsplit.cfg");
             if (f.isFile())
             {
-                return f;
+                res.add(f);
             }
             f = new File(profileDir, ".pdfsplit.cfg");
             if (f.isFile())
             {
-                return f;
+                res.add(f);
             }
         }
-        f = new File(".", "pdfsplit.cfg").getAbsoluteFile();
-        return f.isFile() ? f : null;
+        return res;
 
     }
 
@@ -305,10 +346,11 @@ public class PDFSplitFrame extends JFrame
         System.getenv(DEFAULT_SEP);
         Properties res = createDefaultConfig();
 
-        File cfgFile = getConfigFile();
+        List<File> cfgFiles = getConfigFiles();
 
-        if (cfgFile != null)
+        for (File cfgFile : cfgFiles)
         {
+            LOGGER.log(Level.INFO, "Will load config from {0}.", cfgFile);
             try (FileReader rd = new FileReader(cfgFile))
             {
                 res.load(rd);
@@ -418,6 +460,67 @@ public class PDFSplitFrame extends JFrame
             mConfig = loadConfig();
         }
         return mConfig;
+    }
+
+
+    public int getConfigValI(String aKey, int aDefault)
+    {
+        try
+        {
+            return Integer.valueOf(getConfig().getProperty(aKey));
+        }
+        catch (Exception e)
+        {
+            return aDefault;
+        }
+    }
+
+
+    public float getConfigValF(String aKey, float aDefault)
+    {
+        try
+        {
+            return Float.valueOf(getConfig().getProperty(aKey));
+        }
+        catch (Exception e)
+        {
+            return aDefault;
+        }
+    }
+
+
+    public boolean getConfigValB(String aKey, boolean aDefault)
+    {
+        try
+        {
+            String strVal = getConfig().getProperty(aKey);
+            if (strVal == null)
+            {
+                return aDefault;
+            }
+            return strVal.equalsIgnoreCase("1")
+                    || strVal.equalsIgnoreCase("yes")
+                    || strVal.equalsIgnoreCase(String.valueOf(true));
+        }
+        catch (Exception e)
+        {
+            return aDefault;
+        }
+    }
+
+
+    public String getConfigValS(String aKey, String aDefault)
+    {
+        try
+        {
+            String strVal = getConfig().getProperty(aKey);
+            return (strVal != null) ? strVal : aDefault;
+        }
+        catch (Exception e)
+        {
+            return aDefault;
+        }
+
     }
 
 
@@ -627,20 +730,60 @@ public class PDFSplitFrame extends JFrame
      * 
      * @return a new instance of configured OCR engine.
      */
-    protected Tesseract createOCREngine()
+    protected TesseractFactory createOCRFactory()
     {
-        File dataPath = new File(getConfig().getProperty(PROP_OCR_DATAPATH));
+        TesseractFactory res = new TesseractFactory();
+        File dataPath = new File(
+                getConfigValS(PROP_OCR_DATAPATH, "./tessdata"));
 
-        String language = getConfig().getProperty(PROP_OCR_LANG).toString();
+        String language = getConfigValS(PROP_OCR_LANG, "eng");
 
-        Tesseract tesseract = new Tesseract();
+        if (dataPath.isDirectory())
+        {
+            res.setDatapath(dataPath.getAbsolutePath());
+        }
+
+        res.setLanguage(language);
+
+        try
+        {
+            int engineMode = getConfigValI(PROP_OCR_ENGINE_MODE,
+                    TessOcrEngineMode.OEM_LSTM_ONLY);
+            res.setOcrEngineMode(engineMode);
+        }
+        catch (Exception ex)
+        {
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+        }
+
+        return res;
+    }
+
+
+    protected TesseractC createOCREngine()
+    {
+        File dataPath = new File(
+                getConfigValS(PROP_OCR_DATAPATH, "./tessdata"));
+
+        String language = getConfigValS(PROP_OCR_LANG, "eng");
+
+        TesseractC tesseract = new TesseractC();
         if (dataPath.isDirectory())
         {
             tesseract.setDatapath(dataPath.getAbsolutePath());
         }
 
         tesseract.setLanguage(language);
-        // tesseract.setOcrEngineMode(TessOcrEngineMode.OEM_TESSERACT_ONLY);
+
+        try
+        {
+            int engineMode = getConfigValI(PROP_OCR_ENGINE_MODE, 0);
+            tesseract.setOcrEngineMode(engineMode);
+        }
+        catch (Exception ex)
+        {
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+        }
 
         return tesseract;
     }
@@ -703,12 +846,13 @@ public class PDFSplitFrame extends JFrame
             setStatusText(I18n.getMessage(PDFSplitFrame.class,
                     "open.msgWillOpen", mPDFFile.getAbsolutePath()));
             mPDFDocument = PDDocument.load(mPDFFile);
-            if (String.valueOf(true).equals(getConfig()
-                    .getProperty(PROP_FILTER_DO_OCR, String.valueOf(true))))
+            if (getConfigValB(PROP_FILTER_DO_OCR, true))
             {
-                OCRFilter ocrFilter = new OCRFilter(createOCREngine());
+                TesseractFactory tf = createOCRFactory();
+                OCRFilter ocrFilter = new OCRFilter(tf);
+                ocrFilter.setScale(getConfigValF(PROP_OCR_IMG_SCALE, 1.0f));
                 ocrFilter.addDocumentFilterListener((aEvent) -> {
-                    if (aEvent.getID() == DocumentFilterEvent.EVENT_NEXT_PAGE)
+                    if (aEvent.getID() == DocumentFilterEvent.EVENT_PAGE_DONE)
                     {
                         setStatusText(I18n.getMessage(PDFSplitFrame.class,
                                 "open.msgOCR", mPDFFile.getName(),
@@ -721,69 +865,94 @@ public class PDFSplitFrame extends JFrame
             setStatusText(I18n.getMessage(PDFSplitFrame.class,
                     "open.msgSplitting", mPDFFile.getAbsolutePath()));
 
-            String sepStr = getConfig().getProperty(PROP_SEPARATOR_TEXT);
-            String[] sepArr = sepStr.split(";");
+            SmartSplitter smsp = new SmartSplitter();
+            smsp.addStatusListener(mSplitListener);
+
+            boolean doQrSep = getConfigValB(PROP_SEPARATOR_USE_QR, true);
+            boolean doTextSep = getConfigValB(PROP_SEPARATOR_USE_TEXT, true);
+            if (doQrSep)
+            {
+                String qrCode = getConfigValS(PROP_SEPARATOR_QR_CODE, null);
+                if (qrCode != null && qrCode.trim().length() > 0)
+                {
+                    LOGGER.log(Level.INFO, "Will use QR code splitter for: {0}",
+                            qrCode);
+                    smsp.addSplitPageIdentifier(new QRCodeIdentifier(qrCode));
+                }
+            }
+
+            String sepStr = null;
+            String[] sepArr = null;
             int reqFindCount = 1;
+
+            if (doTextSep)
+            {
+                sepStr = getConfigValS(PROP_SEPARATOR_TEXT, null);
+                sepArr = (sepStr != null && sepStr.trim().length() > 0)
+                        ? sepStr.split(";")
+                        : new String[0];
+                try
+                {
+                    reqFindCount = getConfigValI(PROP_SEPARATOR_MATCH_COUNT, 1);
+                }
+                catch (Exception ex)
+                {
+                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                }
+            }
+            else
+            {
+                sepArr = new String[0];
+            }
+
+            TesseractC ocrEng = null;
             try
             {
-                reqFindCount = Integer.valueOf(
-                        getConfig().getProperty(PROP_SEPARATOR_MATCH_COUNT, "1")
-                                .toString());
-            }
-            catch (Exception ex)
-            {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-            }
-
-            mSmartSplitter = new SmartSplitter();
-            mSmartSplitter.addStatusListener(mSplitListener);
-
-            if (sepStr != null && sepStr.trim().length() > 0)
-            {
-                if (String.valueOf(true).equals(getConfig().getProperty(
-                        PROP_SEPARATOR_DO_OCR, String.valueOf(true))))
+                if (sepArr.length > 0)
                 {
-                    boolean forceOCR = String.valueOf(true)
-                            .equals(getConfig().getProperty(
-                                    PROP_SEPARATOR_FORCE_OCR,
-                                    String.valueOf(true)));
+                    boolean doOCR = getConfigValB(PROP_SEPARATOR_DO_OCR, true);
+                    if (doOCR)
+                    {
+                        boolean forceOCR = getConfigValB(
+                                PROP_SEPARATOR_FORCE_OCR, false);
 
-                    LOGGER.log(Level.INFO,
-                            "Will use OCR based text splitter for: {0} (findCount= {1}, ForceOCR={2})",
-                            new Object[]
-                            {
-                                    sepStr, reqFindCount, forceOCR
-                            });
-                    TextSplitIdentifierOCR ocrSplitter = new TextSplitIdentifierOCR(
-                            sepArr, reqFindCount, forceOCR);
-                    ocrSplitter.setTesseract(createOCREngine());
-                    mSmartSplitter.addSplitPageIdentifier(ocrSplitter);
+                        LOGGER.log(Level.INFO,
+                                "Will use OCR based text splitter for: {0} (findCount= {1}, ForceOCR={2})",
+                                new Object[]
+                                {
+                                        sepStr, reqFindCount, forceOCR
+                                });
+                        TextSplitIdentifierOCR ocrSplitter = new TextSplitIdentifierOCR(
+                                sepArr, reqFindCount, forceOCR);
+                        ocrSplitter.setTesseract(ocrEng = createOCREngine());
+                        ocrSplitter.setScale(
+                                getConfigValF(PROP_OCR_IMG_SCALE, 1.0f));
+                        smsp.addSplitPageIdentifier(ocrSplitter);
+                    }
+                    else
+                    {
+                        LOGGER.log(Level.INFO,
+                                "Will use normal text splitter for: {0} (findCount={1})",
+                                new Object[]
+                                {
+                                        sepStr, reqFindCount
+                                });
+                        smsp.addSplitPageIdentifier(
+                                new TextSplitIdentifier(sepArr, reqFindCount));
+                    }
                 }
-                else
-                {
-                    LOGGER.log(Level.INFO,
-                            "Will use normal text splitter for: {0} (findCount={1})",
-                            new Object[]
-                            {
-                                    sepStr, reqFindCount
-                            });
-                    mSmartSplitter.addSplitPageIdentifier(
-                            new TextSplitIdentifier(sepArr, reqFindCount));
-                }
+                setStatusText(
+                        "Will split file " + mPDFFile.getAbsolutePath() + ".");
+                smsp.split(mPDFDocument);
             }
-
-            String qrCode = getConfig().getProperty(PROP_SEPARATOR_QR_CODE,
-                    null);
-            if (qrCode != null && qrCode.trim().length() > 0)
+            finally
             {
-                LOGGER.log(Level.INFO, "Will use QR code splitter for: {0}",
-                        qrCode);
-                mSmartSplitter
-                        .addSplitPageIdentifier(new QRCodeIdentifier(qrCode));
+                if (ocrEng != null)
+                {
+                    ocrEng.close();
+                }
             }
-            setStatusText(
-                    "Will split file " + mPDFFile.getAbsolutePath() + ".");
-            mSmartSplitter.split(mPDFDocument);
+
         }
         catch (Exception ex)
         {
@@ -811,6 +980,31 @@ public class PDFSplitFrame extends JFrame
                 "_" + mTabIdx + ".pdf");
         PDFDocumentPanel pnl = new PDFDocumentPanel(aDocument,
                 new File(mPDFFile.getParent(), fileName));
+
+        if (getConfigValB(PROP_FILTER_DO_EMPTY_PAGE, true))
+        {
+            EmptyPageChecker epc = new EmptyPageChecker(aDocument);
+            epc.setBlockCountH(Integer.valueOf(
+                    getConfigValI(PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_H, 10)));
+            epc.setBlockCountV(
+                    getConfigValI(PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_V, 10));
+            epc.setPixelFilledThreshold(
+                    getConfigValI(PROP_FILTER_EMPTY_PAGE_TH_PIXEL, 25));
+            epc.setBlockFilledThreshold(
+                    getConfigValI(PROP_FILTER_EMPTY_PAGE_TH_BLOCK, 2));
+            epc.setPageFilledThreshold(
+                    getConfigValI(PROP_FILTER_EMPTY_PAGE_TH_PAGE, 6));
+
+            int idx = 0;
+            for (PDFPagePanel pagePanel : pnl.getPagePanels())
+            {
+                if (epc.isPageEmpty(pagePanel.getPage(), idx))
+                {
+                    pagePanel.setPageEnabled(false);
+                }
+                idx++;
+            }
+        }
 
         JLabel lbl = new JLabel(fileName, mPdfFileIcon, JLabel.LEFT);
         lbl.setFont(mDocsPane.getFont());
