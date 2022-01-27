@@ -40,6 +40,8 @@ public class TextSplitIdentifierOCR extends TextSplitIdentifier
      */
     private Tesseract mTesseract;
 
+    private float mScale = 4.0f;
+
     /**
      * Create a new instance of the identifier.
      * 
@@ -61,6 +63,30 @@ public class TextSplitIdentifierOCR extends TextSplitIdentifier
     {
         super(aSplitTexts, aRequiredCount);
         mForceOCR = aForceOCR;
+    }
+
+
+    /**
+     * 
+     * @param aScale
+     *            the new scale (image size) to be used for pdf image rendering.
+     *            1.0 means 72dpi.
+     * 
+     */
+    public void setScale(float aScale)
+    {
+        mScale = aScale;
+    }
+
+
+    /**
+     * 
+     * @return the current image scale factor used for image rendering. 1.0
+     *         means 72dpi.
+     */
+    public float getScale()
+    {
+        return mScale;
     }
 
 
@@ -109,9 +135,8 @@ public class TextSplitIdentifierOCR extends TextSplitIdentifier
             }
 
             PDFRenderer renderer = new PDFRenderer(aDocument);
-            float renderScale = 4.0f;
 
-            BufferedImage img = renderer.renderImage(aPageIndex, renderScale,
+            BufferedImage img = renderer.renderImage(aPageIndex, mScale,
                     ImageType.BINARY);
 
             String ocrText = mTesseract.doOCR(img);
