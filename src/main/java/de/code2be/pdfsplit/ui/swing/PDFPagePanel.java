@@ -6,6 +6,8 @@ import java.awt.Graphics;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
@@ -25,6 +27,9 @@ public class PDFPagePanel extends JComponent
 {
 
     private static final long serialVersionUID = -8626887910399256241L;
+
+    private static final Logger LOGGER = Logger
+            .getLogger(PDFPagePanel.class.getName());
 
     private final PDPage mPage;
 
@@ -114,7 +119,8 @@ public class PDFPagePanel extends JComponent
         }
         catch (Exception ex)
         {
-            ex.printStackTrace();
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+
             img = new BufferedImage(prefSize.width, prefSize.height,
                     BufferedImage.TYPE_BYTE_GRAY);
             Graphics g = img.getGraphics();
@@ -157,8 +163,6 @@ public class PDFPagePanel extends JComponent
         Graphics g = aG.create();
         try
         {
-            //TODO: possibly use direct rendering into Graphics
-            // how is performance for this?
             ensureRendered();
             int x = 0;
             int y = 0;
@@ -203,6 +207,11 @@ public class PDFPagePanel extends JComponent
         @Override
         public void mouseReleased(MouseEvent aE)
         {
+
+            if (contains(aE.getPoint()) && SwingUtilities.isLeftMouseButton(aE))
+            {
+                setPageEnabled(!isPageEnabled());
+            }
         }
 
 
@@ -227,10 +236,6 @@ public class PDFPagePanel extends JComponent
         @Override
         public void mouseClicked(MouseEvent aE)
         {
-            if (SwingUtilities.isLeftMouseButton(aE))
-            {
-                setPageEnabled(!isPageEnabled());
-            }
         }
     };
 }
