@@ -256,6 +256,13 @@ public class OCRFilter extends AbstractDocumentFilter
     }
 
 
+    protected void notifyEvent(int aId, PageMetaData aPMD)
+    {
+        notifyEvent(aId, aPMD.getDocument(), aPMD.getPage(),
+                aPMD.getPageCount(), aPMD.getPageIndex());
+    }
+
+
     /**
      * Process OCR rendering for the given items. This method is to be called
      * multiple times in parallel threads.
@@ -272,16 +279,12 @@ public class OCRFilter extends AbstractDocumentFilter
             PageMetaData pmd;
             while ((pmd = aItems.next()) != null)
             {
-                notifyEvent(DocumentFilterEvent.EVENT_NEXT_PAGE,
-                        pmd.getDocument(), pmd.getPage(), pmd.getPageCount(),
-                        pmd.getPageIndex());
+                notifyEvent(DocumentFilterEvent.EVENT_NEXT_PAGE, pmd);
 
                 if (!isToProcess(pmd.getDocument(), pmd.getPage(),
                         pmd.getPageIndex()))
                 {
-                    notifyEvent(DocumentFilterEvent.EVENT_PAGE_IGNORED,
-                            pmd.getDocument(), pmd.getPage(),
-                            pmd.getPageCount(), pmd.getPageIndex());
+                    notifyEvent(DocumentFilterEvent.EVENT_PAGE_IGNORED, pmd);
                     continue;
                 }
 
@@ -308,7 +311,6 @@ public class OCRFilter extends AbstractDocumentFilter
                             TessAPI.TessPageIteratorLevel.RIL_WORD);
                     LOGGER.log(Level.FINE, "OCR took: {0}ms",
                             (System.currentTimeMillis() - start));
-
                     pmd.setWords(words);
                 }
                 catch (Exception ex)
@@ -317,9 +319,7 @@ public class OCRFilter extends AbstractDocumentFilter
                 }
                 finally
                 {
-                    notifyEvent(DocumentFilterEvent.EVENT_PAGE_DONE,
-                            pmd.getDocument(), pmd.getPage(),
-                            pmd.getPageCount(), pmd.getPageIndex());
+                    notifyEvent(DocumentFilterEvent.EVENT_PAGE_DONE, pmd);
                 }
             }
         }
