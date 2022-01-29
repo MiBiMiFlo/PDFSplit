@@ -1,6 +1,7 @@
 package de.code2be.help;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -10,7 +11,6 @@ import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
 import net.sourceforge.tess4j.Tesseract;
-import net.sourceforge.tess4j.ITessAPI.TessPageIteratorLevel;
 
 class TestTesseractFactory
 {
@@ -145,6 +145,7 @@ class TestTesseractFactory
             assertEquals("Value1", props.getProperty("variable1"));
             assertEquals("Value2", props.getProperty("variable2"));
 
+            @SuppressWarnings("unchecked")
             List<String> configs = (List<String>) getFieldValue(tc,
                     "configList");
             assertLinesMatch(configs1, configs);
@@ -179,6 +180,7 @@ class TestTesseractFactory
             assertEquals("Value3", props.getProperty("variable3"));
             assertEquals("Value4", props.getProperty("variable4"));
 
+            @SuppressWarnings("unchecked")
             List<String> configs = (List<String>) getFieldValue(tc,
                     "configList");
             assertLinesMatch(configs2, configs);
@@ -213,6 +215,7 @@ class TestTesseractFactory
         assertEquals("Value1", props.getProperty("variable1"));
         assertEquals("Value2", props.getProperty("variable2"));
 
+        @SuppressWarnings("unchecked")
         List<String> configs = (List<String>) getFieldValue(t, "configList");
         assertLinesMatch(configs1, configs);
 
