@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -25,48 +26,131 @@ public class Config extends Properties
     private static final Logger LOGGER = Logger
             .getLogger(Config.class.getName());
 
+    /**
+     * Default value for {@link #PROP_SEPARATOR_TEXT}.
+     */
     public static final String DEFAULT_SEP = "$PWKM%U?5X4$;PDF-SPLIT-SPLIT-PAGE;PDF-SPLIT-TRENNSEITE";
 
+    /**
+     * Default value for {@link #PROP_SEPARATOR_QR_CODE}
+     */
     public static final String DEFAULT_QR_CODE = "https://github.com/MiBiMiFlo/PDFSplit";
 
+    /**
+     * Property key that stores the value for the directory to start an open
+     * action in.
+     */
     public static final String PROP_DIRECTORY_OPEN = "main.dirOpen";
 
+    /**
+     * Property key that stores the value for the directory to save split files
+     * in.
+     */
     public static final String PROP_DIRECTORY_SAVE = "main.dirSave";
 
+    /**
+     * Property key that stores the value for the flag if a text based splitter
+     * is used as separator.
+     */
     public static final String PROP_SEPARATOR_USE_TEXT = "separator.useText";
 
+    /**
+     * Property key that stores the value for the flag if a QR code based
+     * splitter is used as separator.
+     */
     public static final String PROP_SEPARATOR_USE_QR = "separator.useQR";
 
+    /**
+     * Property key that stores the value for the separator text to search.
+     */
     public static final String PROP_SEPARATOR_TEXT = "separator.text";
 
+    /**
+     * Property key that stores the value for the number of text matches
+     * required to identify a page as split page from the text based separator.
+     */
     public static final String PROP_SEPARATOR_MATCH_COUNT = "separator.matchCount";
 
+    /**
+     * Property key that stores the QR code value that identifies a page as
+     * split page in QR code separator.
+     */
     public static final String PROP_SEPARATOR_QR_CODE = "separator.qrcode";
 
+    /**
+     * Property key that stores the value for the flag if OCR is to be performed
+     * in case there is no text found on a page.
+     */
     public static final String PROP_SEPARATOR_DO_OCR = "separator.ocr.enable";
 
+    /**
+     * Property key that stores the value for the flag if OCR is to be performed
+     * on any page, even the once that already contain text.
+     */
     public static final String PROP_SEPARATOR_FORCE_OCR = "separator.ocr.force";
 
+    /**
+     * Property key that stores the value for the flag if OCR is to be performed
+     * as a input filter when opening the PDF file. This will result in the text
+     * being available for searching in the output documents.
+     */
     public static final String PROP_FILTER_DO_OCR = "filter.ocr.enable";
 
+    /**
+     * Property key that stores the value for the flag if empty pages should be
+     * filtered and disabled automatically.
+     */
     public static final String PROP_FILTER_DO_EMPTY_PAGE = "filter.emptyPage.enable";
 
+    /**
+     * Property key that stores the value for the threshold that must be passed
+     * to see a pixel as not empty).
+     */
     public static final String PROP_FILTER_EMPTY_PAGE_TH_PIXEL = "filter.emptyPage.th.pixel";
 
+    /**
+     * Property key that stores the value for the threshold that must be passed
+     * to see a block of pixels as not empty).
+     */
     public static final String PROP_FILTER_EMPTY_PAGE_TH_BLOCK = "filter.emptyPage.th.block";
 
+    /**
+     * Property key that stores the value for the threshold that must be passed
+     * to see a page as not empty).
+     */
     public static final String PROP_FILTER_EMPTY_PAGE_TH_PAGE = "filter.emptyPage.th.page";
 
+    /**
+     * Property key that stores the value for the number of horizontal blocks a
+     * page is cut into for empty page detection.
+     */
     public static final String PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_H = "filter.emptyPage.blockCountH";
 
+    /**
+     * Property key that stores the value for the number of vertical blocks a
+     * page is cut into for empty page detection.
+     */
     public static final String PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_V = "filter.emptyPage.blockCountV";
 
+    /**
+     * Property key that stores the value of the OCR data path (Tesseract data).
+     */
     public static final String PROP_OCR_DATAPATH = "ocr.datapath";
 
+    /**
+     * Property key that stores the value of the OCR language to expect the
+     * document to be in.
+     */
     public static final String PROP_OCR_LANG = "ocr.language";
 
+    /**
+     * Property key that stores the value of the OCR engine mode.
+     */
     public static final String PROP_OCR_ENGINE_MODE = "ocr.engineMode";
 
+    /**
+     * Property key that stores the value of the OCR image scaling factor.
+     */
     public static final String PROP_OCR_IMG_SCALE = "ocr.scale";
 
     /**
@@ -145,62 +229,94 @@ public class Config extends Properties
      */
     public static Config loadConfig() throws FileNotFoundException, IOException
     {
-        System.getenv(DEFAULT_SEP);
         Config res = createDefaultConfig();
 
         List<File> cfgFiles = getConfigFiles();
-
-        for (File cfgFile : cfgFiles)
-        {
-            LOGGER.log(Level.INFO, "Will load config from {0}.", cfgFile);
-            try (FileReader rd = new FileReader(cfgFile))
-            {
-                res.load(rd);
-            }
-        }
-
+        loadConfig(res, cfgFiles.toArray(new File[cfgFiles.size()]));
         return res;
     }
 
 
-    public static File getConfigFileForWrite()
+    /**
+     * Fill the given config with values from the given files.
+     * 
+     * @param aConfig
+     *            the config to fill values in.
+     * @param aFiles
+     *            the files to read.
+     * @throws FileNotFoundException
+     *             in case one of the given files is not found.
+     * @throws IOException
+     *             in case of any read error.
+     */
+    public static void loadConfig(Config aConfig, File... aFiles)
+        throws FileNotFoundException, IOException
     {
-        String profileDir = ".";
-        File f = null;
-        if (System.getenv().containsKey("HOME"))
+        for (File cfgFile : aFiles)
         {
-            profileDir = System.getenv("HOME");
-            f = new File(profileDir, "pdfsplit.cfg");
-            if (f.isFile())
+            LOGGER.log(Level.INFO, "Will load config from {0}.", cfgFile);
+            try (FileReader rd = new FileReader(cfgFile))
             {
-                return f;
+                aConfig.load(rd);
             }
-            return new File(profileDir, ".pdfsplit.cfg");
         }
-        else if (System.getenv().containsKey("USERPROFILE"))
-        {
-            profileDir = System.getenv("USERPROFILE");
-            f = new File(profileDir, "pdfsplit.cfg");
-            if (f.isFile())
-            {
-                return f;
-            }
-            return new File(profileDir, ".pdfsplit.cfg");
-        }
-        f = new File(".", "pdfsplit.cfg").getAbsoluteFile();
-        return f.isFile() ? f : null;
     }
 
 
     /**
-     * Save the actual config to the default user based config file.
+     * 
+     * @return the config file to write user based config values to.
+     */
+    public static File getConfigFileForWrite()
+    {
+
+        List<String> envVars = Arrays.asList("HOME", "USERPROFILE");
+        for (String env : envVars)
+        {
+            String profileDir = ".";
+            File f = null;
+            if (System.getenv().containsKey(env))
+            {
+                profileDir = System.getenv(env);
+                f = new File(profileDir, "pdfsplit.cfg");
+                if (f.isFile())
+                {
+                    return f;
+                }
+                return new File(profileDir, ".pdfsplit.cfg");
+            }
+        }
+
+        return new File(".", "pdfsplit.cfg");
+    }
+
+
+    /**
+     * Save the actual config to the default user based config file. This method
+     * writes to the file returned by {@link #getConfigFileForWrite()}.
      * 
      * @throws IOException
+     *             on write error.
      */
     public static void saveConfig(Config aConfig) throws IOException
     {
-        File f = getConfigFileForWrite();
-        try (FileWriter wr = new FileWriter(f))
+        saveConfig(aConfig, getConfigFileForWrite());
+    }
+
+
+    /**
+     * Save the actual config to the given config file.
+     * 
+     * @param aConfig
+     *            the config to write.
+     * @param aFile
+     *            the file to write to.
+     * @throws IOException
+     *             on write error.
+     */
+    public static void saveConfig(Config aConfig, File aFile) throws IOException
+    {
+        try (FileWriter wr = new FileWriter(aFile))
         {
             aConfig.store(wr, "# Config file for PDF Splitter Application");
         }
@@ -248,18 +364,31 @@ public class Config extends Properties
     }
 
 
+    /**
+     * Create a new empty config.
+     */
     public Config()
     {
 
     }
 
 
+    /**
+     * Create a new instance as copy of the given one.
+     * 
+     * @param aConfig
+     *            the config instance to copy from.
+     */
     public Config(Config aConfig)
     {
-        super(aConfig.defaults);
-        for (Object aKey : aConfig.keySet())
+        super(aConfig != null ? aConfig.defaults : null);
+        if (aConfig != null)
         {
-            setProperty(aKey.toString(), aConfig.getProperty(aKey.toString()));
+            for (Object aKey : aConfig.keySet())
+            {
+                setProperty(aKey.toString(),
+                        aConfig.getProperty(aKey.toString()));
+            }
         }
     }
 
@@ -280,10 +409,25 @@ public class Config extends Properties
         {
             return Integer.valueOf(getProperty(aKey));
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
             return aDefault;
         }
+    }
+
+
+    /**
+     * Set a config item to an int(eger) value. The value will be internally
+     * stored as String using {@link String#valueOf(int)}.
+     * 
+     * @param aKey
+     *            the config key to set the value for.
+     * @param aValue
+     *            the new value.
+     */
+    public void setConfigValI(String aKey, int aValue)
+    {
+        setProperty(aKey, String.valueOf(aValue));
     }
 
 
@@ -303,10 +447,25 @@ public class Config extends Properties
         {
             return Float.valueOf(getProperty(aKey));
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
             return aDefault;
         }
+    }
+
+
+    /**
+     * Set a config item to a float value. The value will be internally stored
+     * as String using {@link String#valueOf(float)}.
+     * 
+     * @param aKey
+     *            the config key to set the value for.
+     * @param aValue
+     *            the new value.
+     */
+    public void setConfigValF(String aKey, float aValue)
+    {
+        setProperty(aKey, String.valueOf(aValue));
     }
 
 
@@ -333,10 +492,25 @@ public class Config extends Properties
                     || strVal.equalsIgnoreCase("yes")
                     || strVal.equalsIgnoreCase(String.valueOf(true));
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
             return aDefault;
         }
+    }
+
+
+    /**
+     * Set a config item to a boolean value. The value will be internally stored
+     * as String using {@link String#valueOf(boolean)}.
+     * 
+     * @param aKey
+     *            the config key to set the value for.
+     * @param aValue
+     *            the new value.
+     */
+    public void setConfigValB(String aKey, boolean aValue)
+    {
+        setProperty(aKey, String.valueOf(aValue));
     }
 
 
@@ -361,7 +535,19 @@ public class Config extends Properties
         {
             return aDefault;
         }
-
     }
 
+
+    /**
+     * Set a config item to a String value.
+     * 
+     * @param aKey
+     *            the config key to set the value for.
+     * @param aValue
+     *            the new value.
+     */
+    public void setConfigValS(String aKey, String aValue)
+    {
+        setProperty(aKey, aValue);
+    }
 }
