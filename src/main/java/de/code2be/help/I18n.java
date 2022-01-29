@@ -9,8 +9,25 @@ import java.util.ResourceBundle;
  * @author Michael Weiss
  *
  */
-public class I18n
+public final class I18n
 {
+
+    /**
+     * This constructor only exists for 100% code coverage in JUnit tests.
+     * 
+     * @return an new instance.
+     */
+    protected static final I18n createInstance()
+    {
+        return new I18n();
+    }
+
+
+    public I18n()
+    {
+
+    }
+
 
     /**
      * Fetch a formatted and localized message for a given class and a key in
@@ -57,7 +74,11 @@ public class I18n
         }
         if (msg == null)
         {
-            msg = getMessage0(aClass.getSuperclass(), aKey, aObjects);
+            Class<?> superClass = aClass.getSuperclass();
+            if (superClass != null)
+            {
+                msg = getMessage0(superClass, aKey, aObjects);
+            }
         }
         return msg;
     }
