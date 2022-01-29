@@ -40,7 +40,11 @@ public class TextSplitIdentifierOCR extends TextSplitIdentifier
      */
     private Tesseract mTesseract;
 
-    private float mScale = 4.0f;
+    /**
+     * The scale factor used to render a PDF page. 1.0f means 72dpi a good
+     * result can be expected with 3.0f or above.
+     */
+    private float mScale = 3.0f;
 
     /**
      * Create a new instance of the identifier.
