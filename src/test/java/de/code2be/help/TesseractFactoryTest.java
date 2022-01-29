@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import net.sourceforge.tess4j.Tesseract;
 
-class TestTesseractFactory
+class TesseractFactoryTest
 {
 
     @Test
