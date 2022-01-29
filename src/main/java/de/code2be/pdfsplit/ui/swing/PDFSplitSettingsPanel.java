@@ -21,6 +21,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import de.code2be.help.I18n;
+import de.code2be.pdfsplit.Config;
 
 import static de.code2be.pdfsplit.Config.*;
 
@@ -150,7 +151,7 @@ public class PDFSplitSettingsPanel extends JPanel
     }
 
 
-    public void saveTo(Properties aConfig)
+    public void saveTo(Config aConfig)
     {
         for (String key : mSettingComponents.keySet())
         {
