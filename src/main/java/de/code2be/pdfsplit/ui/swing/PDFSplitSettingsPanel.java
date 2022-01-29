@@ -1,11 +1,33 @@
 package de.code2be.pdfsplit.ui.swing;
 
+import static de.code2be.pdfsplit.Config.PROP_DIRECTORY_OPEN;
+import static de.code2be.pdfsplit.Config.PROP_DIRECTORY_SAVE;
+import static de.code2be.pdfsplit.Config.PROP_FILTER_DO_EMPTY_PAGE;
+import static de.code2be.pdfsplit.Config.PROP_FILTER_DO_OCR;
+import static de.code2be.pdfsplit.Config.PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_H;
+import static de.code2be.pdfsplit.Config.PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_V;
+import static de.code2be.pdfsplit.Config.PROP_FILTER_EMPTY_PAGE_TH_BLOCK;
+import static de.code2be.pdfsplit.Config.PROP_FILTER_EMPTY_PAGE_TH_PAGE;
+import static de.code2be.pdfsplit.Config.PROP_FILTER_EMPTY_PAGE_TH_PIXEL;
+import static de.code2be.pdfsplit.Config.PROP_OCR_DATAPATH;
+import static de.code2be.pdfsplit.Config.PROP_SEPARATOR_QR_CODE;
+
+import static de.code2be.pdfsplit.Config.PROP_OCR_ENGINE_MODE;
+import static de.code2be.pdfsplit.Config.PROP_OCR_IMG_SCALE;
+import static de.code2be.pdfsplit.Config.PROP_OCR_LANG;
+import static de.code2be.pdfsplit.Config.PROP_SEPARATOR_DO_OCR;
+import static de.code2be.pdfsplit.Config.PROP_SEPARATOR_FORCE_OCR;
+import static de.code2be.pdfsplit.Config.PROP_SEPARATOR_TEXT;
+import static de.code2be.pdfsplit.Config.PROP_SEPARATOR_USE_QR;
+import static de.code2be.pdfsplit.Config.PROP_SEPARATOR_USE_TEXT;
+
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,16 +36,19 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.ListCellRenderer;
 
 import de.code2be.help.I18n;
 import de.code2be.pdfsplit.Config;
-
-import static de.code2be.pdfsplit.Config.*;
+import net.sourceforge.tess4j.ITessAPI.TessOcrEngineMode;
 
 public class PDFSplitSettingsPanel extends JPanel
 {
@@ -35,8 +60,23 @@ public class PDFSplitSettingsPanel extends JPanel
 
     private Map<String, JComponent> mSettingComponents = new HashMap<>();
 
+    private final Map<String, String> mOcrEngineModes;
+
     public PDFSplitSettingsPanel()
     {
+        mOcrEngineModes = new HashMap<>();
+
+        mOcrEngineModes.put(
+                String.valueOf(TessOcrEngineMode.OEM_TESSERACT_ONLY),
+                "OEM_TESSERACT_ONLY");
+        mOcrEngineModes.put(String.valueOf(TessOcrEngineMode.OEM_LSTM_ONLY),
+                "OEM_LSTM_ONLY");
+        mOcrEngineModes.put(
+                String.valueOf(TessOcrEngineMode.OEM_TESSERACT_LSTM_COMBINED),
+                "OEM_TESSERACT_LSTM_COMBINED");
+        mOcrEngineModes.put(String.valueOf(TessOcrEngineMode.OEM_DEFAULT),
+                "OEM_DEFAULT");
+
         setLayout(new ListLayout(5, ListLayout.LEFT,
                 ListLayout.STRETCH_HORIZONTAL));
 
@@ -81,7 +121,9 @@ public class PDFSplitSettingsPanel extends JPanel
                         "Search For QR Code"));
         pnlSplit.add(pnl1);
         pnlSplit.add(
-                createLabeledTextFor(PROP_SEPARATOR_TEXT, "Separator Text"));
+                createLabeledTextFor(PROP_SEPARATOR_TEXT, "Separator Text:"));
+        pnlSplit.add(createLabeledTextFor(PROP_SEPARATOR_QR_CODE,
+                "Separator QR Code:"));
 
         JPanel pnl2 = createColumnPanel(
                 createLabeledCheckBoxFor(PROP_SEPARATOR_DO_OCR, "Use OCR"),
@@ -94,8 +136,14 @@ public class PDFSplitSettingsPanel extends JPanel
                 ListLayout.STRETCH_HORIZONTAL));
         pnlOcr.setBorder(BorderFactory.createTitledBorder(
                 I18n.getMessage(PDFSplitSettingsPanel.class, "panel.ocr")));
+
         pnlOcr.add(createLabeledTextFor(PROP_OCR_DATAPATH, "Data Path:"));
-        pnlOcr.add(createLabeledTextFor(PROP_OCR_ENGINE_MODE, "Engine:"));
+
+        List<String> engineModes = new ArrayList<>(mOcrEngineModes.keySet());
+        Collections.sort(engineModes);
+        pnlOcr.add(createLabeledComboBoxFor(PROP_OCR_ENGINE_MODE, "Engine:",
+                new OCREngineRenderer(), engineModes));
+
         pnlOcr.add(createLabeledTextFor(PROP_OCR_LANG, "Language:"));
         pnlOcr.add(createLabeledTextFor(PROP_OCR_IMG_SCALE, "Image Scale:"));
         add(pnlOcr);
@@ -105,7 +153,7 @@ public class PDFSplitSettingsPanel extends JPanel
         for (String key : mSettingComponents.keySet())
         {
             JComponent cmp = mSettingComponents.get(key);
-            if (cmp instanceof JTextField)
+            if ((cmp instanceof JTextField) || (cmp instanceof JComboBox))
             {
                 Container parent = cmp.getParent();
                 if (parent instanceof JPanel)
@@ -122,7 +170,7 @@ public class PDFSplitSettingsPanel extends JPanel
         }
         LOGGER.log(Level.INFO, "Set label width to {0}.", maxLength);
         Dimension pref = labels.get(0).getPreferredSize();
-        Dimension min = new Dimension(maxLength, pref.height);
+        Dimension min = new Dimension(maxLength + 5, pref.height);
         for (JLabel lbl : labels)
         {
             lbl.setMinimumSize(min);
@@ -147,6 +195,10 @@ public class PDFSplitSettingsPanel extends JPanel
             {
                 ((JTextField) cmp).setText(value);
             }
+            else if (cmp instanceof JCheckBox)
+            {
+                ((JCheckBox) cmp).setText(value);
+            }
         }
     }
 
@@ -156,14 +208,27 @@ public class PDFSplitSettingsPanel extends JPanel
         for (String key : mSettingComponents.keySet())
         {
             JComponent cmp = mSettingComponents.get(key);
+            String val = null;
             if (cmp instanceof JCheckBox)
             {
-                aConfig.setProperty(key,
-                        String.valueOf(((JCheckBox) cmp).isSelected()));
+                val = String.valueOf(((JCheckBox) cmp).isSelected());
             }
             else if (cmp instanceof JTextField)
             {
-                aConfig.setProperty(key, ((JTextField) cmp).getText());
+                val = ((JTextField) cmp).getText();
+            }
+            else if (cmp instanceof JTextField)
+            {
+                val = ((JCheckBox) cmp).getText();
+            }
+
+            if (val != null && val.trim().length() > 0)
+            {
+                aConfig.setProperty(key, val);
+            }
+            else
+            {
+                aConfig.remove(key);
             }
         }
     }
@@ -207,6 +272,31 @@ public class PDFSplitSettingsPanel extends JPanel
     }
 
 
+    protected <T> JComponent createLabeledComboBoxFor(String aKey,
+            String aLabel, ListCellRenderer<T> aRenderer,
+            List<? extends T> aValues)
+    {
+        if (aLabel == null)
+        {
+            aLabel = I18n.getMessage(PDFSplitSettingsPanel.class,
+                    "label." + aKey);
+        }
+        JPanel pnlRes = new JPanel(new BorderLayout());
+        pnlRes.add(new JLabel(aLabel), BorderLayout.WEST);
+        JComboBox<T> cbxField = new JComboBox<>();
+
+        for (T obj : aValues)
+        {
+            cbxField.addItem(obj);
+        }
+        cbxField.setRenderer(aRenderer);
+        cbxField.setName(aKey);
+        mSettingComponents.put(aKey, cbxField);
+        pnlRes.add(cbxField, BorderLayout.CENTER);
+        return pnlRes;
+    }
+
+
     protected JPanel createColumnPanel(JComponent... aComponents)
     {
         JPanel pnl = new JPanel(new GridLayout(1, aComponents.length));
@@ -216,5 +306,25 @@ public class PDFSplitSettingsPanel extends JPanel
         }
         return pnl;
 
+    }
+
+    protected class OCREngineRenderer extends DefaultListCellRenderer
+    {
+
+        private static final long serialVersionUID = 7340662237830184722L;
+
+        @Override
+        public Component getListCellRendererComponent(JList<?> aList,
+                Object aValue, int aIndex, boolean aIsSelected,
+                boolean aCellHasFocus)
+        {
+            Object newVal = mOcrEngineModes.get(aValue);
+            if (newVal != null)
+            {
+                aValue = newVal;
+            }
+            return super.getListCellRendererComponent(aList, aValue, aIndex,
+                    aIsSelected, aCellHasFocus);
+        }
     }
 }
