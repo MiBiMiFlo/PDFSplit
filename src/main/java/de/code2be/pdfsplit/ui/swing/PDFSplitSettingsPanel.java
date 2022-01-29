@@ -22,6 +22,8 @@ import javax.swing.JTextField;
 
 import de.code2be.help.I18n;
 
+import static de.code2be.pdfsplit.Config.*;
+
 public class PDFSplitSettingsPanel extends JPanel
 {
 
@@ -41,8 +43,8 @@ public class PDFSplitSettingsPanel extends JPanel
                 ListLayout.STRETCH_HORIZONTAL));
         pnlGeneral.setBorder(BorderFactory.createTitledBorder(
                 I18n.getMessage(PDFSplitSettingsPanel.class, "panel.general")));
-        pnlGeneral.add(createLabeledTextFor(PDFSplitFrame.PROP_DIRECTORY_OPEN));
-        pnlGeneral.add(createLabeledTextFor(PDFSplitFrame.PROP_DIRECTORY_SAVE));
+        pnlGeneral.add(createLabeledTextFor(PROP_DIRECTORY_OPEN));
+        pnlGeneral.add(createLabeledTextFor(PROP_DIRECTORY_SAVE));
 
         add(pnlGeneral);
 
@@ -50,25 +52,19 @@ public class PDFSplitSettingsPanel extends JPanel
                 ListLayout.STRETCH_HORIZONTAL));
         pnlFilter.setBorder(BorderFactory.createTitledBorder(
                 I18n.getMessage(PDFSplitSettingsPanel.class, "panel.filter")));
-        pnlFilter.add(createLabeledCheckBoxFor(PDFSplitFrame.PROP_FILTER_DO_OCR,
+        pnlFilter.add(createLabeledCheckBoxFor(PROP_FILTER_DO_OCR,
                 "Use OCR to add Text"));
-        pnlFilter.add(createLabeledCheckBoxFor(
-                PDFSplitFrame.PROP_FILTER_DO_EMPTY_PAGE,
+        pnlFilter.add(createLabeledCheckBoxFor(PROP_FILTER_DO_EMPTY_PAGE,
                 "Auto Filter Empty Pages"));
-        pnlFilter.add(createLabeledTextFor(
-                PDFSplitFrame.PROP_FILTER_EMPTY_PAGE_TH_PIXEL,
+        pnlFilter.add(createLabeledTextFor(PROP_FILTER_EMPTY_PAGE_TH_PIXEL,
                 "Threshold Pixel:"));
-        pnlFilter.add(createLabeledTextFor(
-                PDFSplitFrame.PROP_FILTER_EMPTY_PAGE_TH_BLOCK,
+        pnlFilter.add(createLabeledTextFor(PROP_FILTER_EMPTY_PAGE_TH_BLOCK,
                 "Threshold Block:"));
-        pnlFilter.add(createLabeledTextFor(
-                PDFSplitFrame.PROP_FILTER_EMPTY_PAGE_TH_PAGE,
+        pnlFilter.add(createLabeledTextFor(PROP_FILTER_EMPTY_PAGE_TH_PAGE,
                 "Threshold Page:"));
-        pnlFilter.add(createLabeledTextFor(
-                PDFSplitFrame.PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_H,
+        pnlFilter.add(createLabeledTextFor(PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_H,
                 "Blocks Horizontal:"));
-        pnlFilter.add(createLabeledTextFor(
-                PDFSplitFrame.PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_V,
+        pnlFilter.add(createLabeledTextFor(PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_V,
                 "Blocks Vertical:"));
 
         add(pnlFilter);
@@ -78,18 +74,17 @@ public class PDFSplitSettingsPanel extends JPanel
         pnlSplit.setBorder(BorderFactory.createTitledBorder(
                 I18n.getMessage(PDFSplitSettingsPanel.class, "panel.split")));
         JPanel pnl1 = createColumnPanel(
-                createLabeledCheckBoxFor(PDFSplitFrame.PROP_SEPARATOR_USE_TEXT,
+                createLabeledCheckBoxFor(PROP_SEPARATOR_USE_TEXT,
                         "Use Text Separator"),
-                createLabeledCheckBoxFor(PDFSplitFrame.PROP_SEPARATOR_USE_QR,
+                createLabeledCheckBoxFor(PROP_SEPARATOR_USE_QR,
                         "Search For QR Code"));
         pnlSplit.add(pnl1);
-        pnlSplit.add(createLabeledTextFor(PDFSplitFrame.PROP_SEPARATOR_TEXT,
-                "Separator Text"));
+        pnlSplit.add(
+                createLabeledTextFor(PROP_SEPARATOR_TEXT, "Separator Text"));
 
         JPanel pnl2 = createColumnPanel(
-                createLabeledCheckBoxFor(PDFSplitFrame.PROP_SEPARATOR_DO_OCR,
-                        "Use OCR"),
-                createLabeledCheckBoxFor(PDFSplitFrame.PROP_SEPARATOR_FORCE_OCR,
+                createLabeledCheckBoxFor(PROP_SEPARATOR_DO_OCR, "Use OCR"),
+                createLabeledCheckBoxFor(PROP_SEPARATOR_FORCE_OCR,
                         "Force OCR"));
         pnlSplit.add(pnl2);
         add(pnlSplit);
@@ -98,14 +93,10 @@ public class PDFSplitSettingsPanel extends JPanel
                 ListLayout.STRETCH_HORIZONTAL));
         pnlOcr.setBorder(BorderFactory.createTitledBorder(
                 I18n.getMessage(PDFSplitSettingsPanel.class, "panel.ocr")));
-        pnlOcr.add(createLabeledTextFor(PDFSplitFrame.PROP_OCR_DATAPATH,
-                "Data Path:"));
-        pnlOcr.add(createLabeledTextFor(PDFSplitFrame.PROP_OCR_ENGINE_MODE,
-                "Engine:"));
-        pnlOcr.add(
-                createLabeledTextFor(PDFSplitFrame.PROP_OCR_LANG, "Language:"));
-        pnlOcr.add(createLabeledTextFor(PDFSplitFrame.PROP_OCR_IMG_SCALE,
-                "Image Scale:"));
+        pnlOcr.add(createLabeledTextFor(PROP_OCR_DATAPATH, "Data Path:"));
+        pnlOcr.add(createLabeledTextFor(PROP_OCR_ENGINE_MODE, "Engine:"));
+        pnlOcr.add(createLabeledTextFor(PROP_OCR_LANG, "Language:"));
+        pnlOcr.add(createLabeledTextFor(PROP_OCR_IMG_SCALE, "Image Scale:"));
         add(pnlOcr);
 
         List<JLabel> labels = new ArrayList<>();

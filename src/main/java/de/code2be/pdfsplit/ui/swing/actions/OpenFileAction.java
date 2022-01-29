@@ -5,6 +5,7 @@ import java.io.File;
 
 import javax.swing.JFileChooser;
 
+import de.code2be.pdfsplit.Config;
 import de.code2be.pdfsplit.ui.swing.FileExtensionFilter;
 import de.code2be.pdfsplit.ui.swing.PDFSplitFrame;
 
@@ -34,8 +35,8 @@ public class OpenFileAction extends BasicAction
      */
     protected File getCurrentDirectory()
     {
-        String dir = mFrame.getConfigValS(PDFSplitFrame.PROP_DIRECTORY_OPEN,
-                null);
+        String dir = mFrame.getConfig()
+                .getConfigValS(Config.PROP_DIRECTORY_OPEN, null);
         if (dir != null)
         {
             return new File(dir);
@@ -73,7 +74,7 @@ public class OpenFileAction extends BasicAction
             return null;
         }
         File dir = f.getParentFile();
-        mFrame.getConfig().put(PDFSplitFrame.PROP_DIRECTORY_OPEN,
+        mFrame.getConfig().put(Config.PROP_DIRECTORY_OPEN,
                 dir.getAbsolutePath());
         return f;
     }

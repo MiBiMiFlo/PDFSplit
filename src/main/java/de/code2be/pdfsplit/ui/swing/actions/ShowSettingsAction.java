@@ -1,10 +1,11 @@
 package de.code2be.pdfsplit.ui.swing.actions;
 
 import java.awt.event.ActionEvent;
-import java.util.Properties;
+import java.util.logging.Level;
 
 import javax.swing.JOptionPane;
 
+import de.code2be.pdfsplit.Config;
 import de.code2be.pdfsplit.ui.swing.PDFSplitFrame;
 import de.code2be.pdfsplit.ui.swing.PDFSplitSettingsPanel;
 
@@ -26,7 +27,7 @@ public class ShowSettingsAction extends BasicAction
     public void actionPerformed(ActionEvent aE)
     {
         PDFSplitSettingsPanel settings = new PDFSplitSettingsPanel();
-        Properties cfg = mFrame.getConfig();
+        Config cfg = mFrame.getConfig();
         settings.initialize(cfg);
 
         int res = JOptionPane.showConfirmDialog(mFrame, settings, "Settings",
@@ -35,7 +36,17 @@ public class ShowSettingsAction extends BasicAction
         {
             settings.saveTo(cfg);
             mFrame.setConfig(cfg);
-            mFrame.saveConfig();
+            try
+            {
+                Config.saveConfig(cfg);
+            }
+            catch (Exception ex)
+            {
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                mFrame.showError(ex.getMessage(),
+                        "ERROR - Can not write config", ex);
+            }
+
         }
     }
 
