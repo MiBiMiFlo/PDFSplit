@@ -172,44 +172,43 @@ public class Config extends Properties
     protected static List<File> getConfigFiles()
     {
         List<File> res = new ArrayList<>();
-        String profileDir = ".";
-        File f = new File(".", "pdfsplit.cfg").getAbsoluteFile();
+
+        String exedir = System.getProperty("launch4j.exedir");
+        if (exedir == null)
+        {
+            exedir = new File(".").getAbsolutePath();
+        }
+
+        File f = new File(exedir, "pdfsplit.cfg");
         if (f.isFile())
         {
-            res.add(f);
+            res.add(f.getAbsoluteFile());
         }
 
-        if (System.getenv().containsKey("HOME"))
+        List<String> envVars = Arrays.asList("HOME", "USERPROFILE");
+        for (String env : envVars)
         {
-            profileDir = System.getenv("HOME");
-            f = new File(profileDir, ".pdfsplit.cfg");
-            if (f.isFile())
+            if (System.getenv().containsKey(env))
             {
-                res.add(f);
-            }
+                File dir = new File(System.getenv(env));
+                if (!dir.isDirectory())
+                {
+                    continue;
+                }
+                f = new File(dir, ".pdfsplit.cfg");
+                if (f.isFile())
+                {
+                    res.add(f.getAbsoluteFile());
+                }
 
-            f = new File(profileDir, "pdfsplit.cfg");
-            if (f.isFile())
-            {
-                res.add(f);
-            }
-        }
-        if (System.getenv().containsKey("USERPROFILE"))
-        {
-            profileDir = System.getenv("USERPROFILE");
-            f = new File(profileDir, "pdfsplit.cfg");
-            if (f.isFile())
-            {
-                res.add(f);
-            }
-            f = new File(profileDir, ".pdfsplit.cfg");
-            if (f.isFile())
-            {
-                res.add(f);
+                f = new File(dir, "pdfsplit.cfg");
+                if (f.isFile())
+                {
+                    res.add(f.getAbsoluteFile());
+                }
             }
         }
         return res;
-
     }
 
 
@@ -269,25 +268,21 @@ public class Config extends Properties
      */
     public static File getConfigFileForWrite()
     {
-
         List<String> envVars = Arrays.asList("HOME", "USERPROFILE");
-        for (String env : envVars)
+        for (String envVar : envVars)
         {
-            String profileDir = ".";
-            File f = null;
-            if (System.getenv().containsKey(env))
+            String val = System.getenv(envVar);
+            if (val != null)
             {
-                profileDir = System.getenv(env);
-                f = new File(profileDir, "pdfsplit.cfg");
-                if (f.isFile())
+                File dir = new File(val);
+                if (dir.isDirectory())
                 {
-                    return f;
+                    return new File(dir, "pdfsplit.cfg").getAbsoluteFile();
                 }
-                return new File(profileDir, ".pdfsplit.cfg");
             }
         }
 
-        return new File(".", "pdfsplit.cfg");
+        return new File(".", "pdfsplit.cfg").getAbsoluteFile();
     }
 
 
@@ -355,7 +350,7 @@ public class Config extends Properties
         res.put(PROP_FILTER_DO_EMPTY_PAGE, String.valueOf(true));
         res.put(PROP_FILTER_EMPTY_PAGE_TH_PIXEL, "25");
         res.put(PROP_FILTER_EMPTY_PAGE_TH_BLOCK, "2");
-        res.put(PROP_FILTER_EMPTY_PAGE_TH_PIXEL, "6");
+        res.put(PROP_FILTER_EMPTY_PAGE_TH_PAGE, "6");
         res.put(PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_H, "10");
         res.put(PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_V, "10");
 
@@ -481,21 +476,14 @@ public class Config extends Properties
      */
     public boolean getConfigValB(String aKey, boolean aDefault)
     {
-        try
-        {
-            String strVal = getProperty(aKey);
-            if (strVal == null)
-            {
-                return aDefault;
-            }
-            return strVal.equalsIgnoreCase("1")
-                    || strVal.equalsIgnoreCase("yes")
-                    || strVal.equalsIgnoreCase(String.valueOf(true));
-        }
-        catch (Exception ex)
+        String strVal = getProperty(aKey);
+        if (strVal == null)
         {
             return aDefault;
         }
+        return strVal.equalsIgnoreCase("1") || strVal.equalsIgnoreCase("yes")
+                || strVal.equalsIgnoreCase("true")
+                || strVal.equalsIgnoreCase(String.valueOf(true));
     }
 
 
@@ -526,15 +514,8 @@ public class Config extends Properties
      */
     public String getConfigValS(String aKey, String aDefault)
     {
-        try
-        {
-            String strVal = getProperty(aKey);
-            return (strVal != null) ? strVal : aDefault;
-        }
-        catch (Exception e)
-        {
-            return aDefault;
-        }
+        String strVal = getProperty(aKey);
+        return (strVal != null) ? strVal : aDefault;
     }
 
 
@@ -548,6 +529,13 @@ public class Config extends Properties
      */
     public void setConfigValS(String aKey, String aValue)
     {
-        setProperty(aKey, aValue);
+        if (aValue == null)
+        {
+            remove(aKey);
+        }
+        else
+        {
+            setProperty(aKey, aValue);
+        }
     }
 }
