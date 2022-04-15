@@ -14,12 +14,14 @@ public class RenameAction extends BasicAction
 
     private static final long serialVersionUID = 1343590381079832914L;
 
+    public static final String ACTION_NAME = "RENAME";
+
     private final PDFSplitFrame mFrame;
 
     public RenameAction(PDFSplitFrame aFrame)
     {
         mFrame = aFrame;
-        setCommandKey("RENAME");
+        setCommandKey(ACTION_NAME);
     }
 
 

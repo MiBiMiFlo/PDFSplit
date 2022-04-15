@@ -96,6 +96,7 @@ public class PDFPagePanel extends JComponent
     protected void rerenderPageImage()
     {
         mPageImage = null;
+        revalidate();
         repaint();
     }
 
@@ -131,9 +132,15 @@ public class PDFPagePanel extends JComponent
         {
             synchronized (this)
             {
-                mPageImage = img;
                 mRendering = false;
-                SwingUtilities.invokeLater(() -> repaint());
+                if (prefSize.equals(getPreferredSize()))
+                {
+                    mPageImage = img;
+                }
+                SwingUtilities.invokeLater(() -> {
+                    revalidate();
+                    repaint();
+                });
             }
         }
     }

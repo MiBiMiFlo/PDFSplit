@@ -20,12 +20,14 @@ public class OpenFileAction extends BasicAction
 
     private static final long serialVersionUID = 8386886689858092404L;
 
+    public static final String ACTION_NAME = "OPEN";
+
     private final PDFSplitFrame mFrame;
 
     public OpenFileAction(PDFSplitFrame aFrame)
     {
         mFrame = aFrame;
-        setCommandKey("OPEN");
+        setCommandKey(ACTION_NAME);
     }
 
 

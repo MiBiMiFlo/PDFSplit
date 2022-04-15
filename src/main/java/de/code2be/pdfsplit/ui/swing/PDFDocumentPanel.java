@@ -25,6 +25,8 @@ public class PDFDocumentPanel extends JPanel
 
     private static final long serialVersionUID = 5228203932797387514L;
 
+    private final PDFSplitFrame mFrame;
+
     private final PDDocument mDocument;
 
     private Dimension mPageSize;
@@ -35,8 +37,12 @@ public class PDFDocumentPanel extends JPanel
 
     private JLabel mLblFileName;
 
-    public PDFDocumentPanel(PDDocument aDocument, File aFile)
+    private final JScrollPane mScrollPane;
+
+    public PDFDocumentPanel(PDFSplitFrame aFrame, PDDocument aDocument,
+            File aFile)
     {
+        mFrame = aFrame;
         mDocument = aDocument;
         mFile = aFile;
         mMainPanel = new PDFPagesPanel();
@@ -52,7 +58,20 @@ public class PDFDocumentPanel extends JPanel
         mLblFileName.setFont(mLblFileName.getFont().deriveFont(16.0f));
 
         add(pnlTop, BorderLayout.NORTH);
-        add(new JScrollPane(mMainPanel), BorderLayout.CENTER);
+        add(mScrollPane = new JScrollPane(mMainPanel), BorderLayout.CENTER);
+        mScrollPane.setHorizontalScrollBarPolicy(
+                JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        mScrollPane.setVerticalScrollBarPolicy(
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        mScrollPane.addMouseWheelListener((aE) -> {
+
+            mFrame.zoomOnMouseWheel(aE);
+            if (!aE.isConsumed())
+            {
+                mScrollPane.getParent().dispatchEvent(aE);
+            }
+
+        });
         refillPages();
         updateStatusLabel();
     }
@@ -201,6 +220,7 @@ public class PDFDocumentPanel extends JPanel
         for (PDPage page : mDocument.getPages())
         {
             PDFPagePanel pp = new PDFPagePanel(this, page, pnum);
+            // pp.addMouseWheelListener((aE) -> mFrame.zoomOnMouseWheel(aE));
             pp.setPreferredSize(mPageSize);
             pp.addPropertyChangeListener("enabled",
                     (aEvt) -> updateStatusLabel());

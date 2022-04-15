@@ -113,7 +113,7 @@ public class FlowWrapLayout extends FlowLayout
         synchronized (target.getTreeLock())
         {
             int minx = Integer.MAX_VALUE;
-            int miny = Integer.MIN_VALUE;
+            int miny = Integer.MAX_VALUE;
             boolean found_one = false;
             int n = target.getComponentCount();
 

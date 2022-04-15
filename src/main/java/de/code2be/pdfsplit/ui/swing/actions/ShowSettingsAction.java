@@ -14,12 +14,14 @@ public class ShowSettingsAction extends BasicAction
 
     private static final long serialVersionUID = -5786934215465751672L;
 
+    public static final String ACTION_NAME = "SETTINGS";
+
     private final PDFSplitFrame mFrame;
 
     public ShowSettingsAction(PDFSplitFrame aFrame)
     {
         mFrame = aFrame;
-        setCommandKey("SETTINGS");
+        setCommandKey(ACTION_NAME);
     }
 
 

@@ -77,6 +77,17 @@ public class PDFPagesPanel extends JPanel implements Scrollable
     @Override
     public boolean getScrollableTracksViewportWidth()
     {
+        if (getComponentCount() > 0)
+        {
+            int minWidth = getComponent(0).getPreferredSize().width;
+            if (getParent().getWidth() < minWidth)
+            {
+                // even a single page is wider than the view port --> we need
+                // our own witdh
+                return false;
+            }
+        }
+        // viewport is wider than one page --> we stick to viewport width.
         return true;
     }
 

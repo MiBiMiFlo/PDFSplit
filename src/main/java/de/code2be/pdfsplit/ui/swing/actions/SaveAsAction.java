@@ -14,12 +14,14 @@ public class SaveAsAction extends BasicAction
 
     private static final long serialVersionUID = 7976895178921372492L;
 
+    public static final String ACTION_NAME = "SAVE_AS";
+
     private final PDFSplitFrame mFrame;
 
     public SaveAsAction(PDFSplitFrame aFrame)
     {
         mFrame = aFrame;
-        setCommandKey("SAVE_AS");
+        setCommandKey(ACTION_NAME);
     }
 
 

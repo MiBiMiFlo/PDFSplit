@@ -10,12 +10,14 @@ public class ZoomInAction extends BasicAction
 
     private static final long serialVersionUID = -1592964331110414714L;
 
+    public static final String ACTION_NAME = "ZOOM_IN";
+
     private final PDFSplitFrame mFrame;
 
     public ZoomInAction(PDFSplitFrame aFrame)
     {
         mFrame = aFrame;
-        setCommandKey("ZOOM_IN");
+        setCommandKey(ACTION_NAME);
     }
 
 

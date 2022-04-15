@@ -19,12 +19,14 @@ public class DeleteDocumentAction extends BasicAction
 
     private static final long serialVersionUID = 242115467906128133L;
 
+    public static final String ACTION_NAME = "DELETE";
+
     private final PDFSplitFrame mFrame;
 
     public DeleteDocumentAction(PDFSplitFrame aFrame)
     {
         mFrame = aFrame;
-        setCommandKey("DELETE");
+        setCommandKey(ACTION_NAME);
     }
 
 

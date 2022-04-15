@@ -10,12 +10,14 @@ public class ZoomOutAction extends BasicAction
 
     private static final long serialVersionUID = -1363168009033459171L;
 
+    public static final String ACTION_NAME = "ZOOM_OUT";
+
     private final PDFSplitFrame mFrame;
 
     public ZoomOutAction(PDFSplitFrame aFrame)
     {
         mFrame = aFrame;
-        setCommandKey("ZOOM_OUT");
+        setCommandKey(ACTION_NAME);
     }
 
 
