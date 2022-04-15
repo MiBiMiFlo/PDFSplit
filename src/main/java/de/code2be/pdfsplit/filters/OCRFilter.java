@@ -5,6 +5,7 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -43,8 +44,7 @@ public class OCRFilter extends AbstractDocumentFilter
 
     private static final long serialVersionUID = 7575485665208369756L;
 
-    private static final Logger LOGGER = Logger
-            .getLogger(OCRFilter.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(OCRFilter.class.getName());
 
     /**
      * The tesseract engine instance to use for OCR.
@@ -149,8 +149,7 @@ public class OCRFilter extends AbstractDocumentFilter
      *            the index of the page to check for text.
      * @return true if the given page contains already text, false otherwise.
      */
-    public boolean containsText(PDDocument aDocument, PDPage aPage,
-            int aPageIndex)
+    public boolean containsText(PDDocument aDocument, PDPage aPage, int aPageIndex)
     {
         try
         {
@@ -179,8 +178,7 @@ public class OCRFilter extends AbstractDocumentFilter
      *            the index of the page to be checked.
      * @return true if the page is to be processed, false otherwise.
      */
-    protected boolean isToProcess(PDDocument aDocument, PDPage aPage,
-            int aPageIndex)
+    protected boolean isToProcess(PDDocument aDocument, PDPage aPage, int aPageIndex)
     {
         return !containsText(aDocument, aPage, aPageIndex);
     }
@@ -194,8 +192,7 @@ public class OCRFilter extends AbstractDocumentFilter
      */
     protected void applyWords(PageMetaData aPageMetaData)
     {
-        try (PDPageContentStream cs = new PDPageContentStream(
-                aPageMetaData.getDocument(), aPageMetaData.getPage(),
+        try (PDPageContentStream cs = new PDPageContentStream(aPageMetaData.getDocument(), aPageMetaData.getPage(),
                 AppendMode.APPEND, false, true))
         {
             PDRectangle pageBox = aPageMetaData.getPage().getBBox();
@@ -207,7 +204,13 @@ public class OCRFilter extends AbstractDocumentFilter
             // we use green and red for debug
             cs.setStrokingColor(Color.red);
             cs.setNonStrokingColor(Color.green);
-            for (Word w : aPageMetaData.getWords())
+            List<Word> words = aPageMetaData.getWords();
+            if (words == null)
+            {
+                words = Collections.emptyList();
+            }
+
+            for (Word w : words)
             {
                 String text = w.getText();
                 String clearedText = cleanForEncoding(text, font.getEncoding());
@@ -217,19 +220,16 @@ public class OCRFilter extends AbstractDocumentFilter
                 }
 
                 Rectangle r = w.getBoundingBox();
-                Rectangle r_scaled = new Rectangle((int) (r.x / mScale),
-                        (int) (r.y / mScale), (int) (r.width / mScale),
+                Rectangle r_scaled = new Rectangle((int) (r.x / mScale), (int) (r.y / mScale), (int) (r.width / mScale),
                         (int) (r.height / mScale));
 
                 float fontSize = (float) r_scaled.height;
 
-                float textWidth = font.getStringWidth(clearedText) / 1000
-                        * fontSize;
+                float textWidth = font.getStringWidth(clearedText) / 1000 * fontSize;
                 while (textWidth > r_scaled.width && fontSize > 1)
                 {
                     fontSize -= 0.2f;
-                    textWidth = font.getStringWidth(clearedText) / 1000
-                            * fontSize;
+                    textWidth = font.getStringWidth(clearedText) / 1000 * fontSize;
                 }
 
                 float sfx = 1.0f; // (txtWidth * 0.021f) / (r.width
@@ -243,8 +243,7 @@ public class OCRFilter extends AbstractDocumentFilter
                 cs.beginText();
                 cs.setFont(font, fontSize);
 
-                cs.newLineAtOffset(r_scaled.x,
-                        pageBox.getHeight() - (r_scaled.y + r_scaled.height));
+                cs.newLineAtOffset(r_scaled.x, pageBox.getHeight() - (r_scaled.y + r_scaled.height));
                 cs.showText(clearedText);
                 cs.endText();
             }
@@ -258,8 +257,7 @@ public class OCRFilter extends AbstractDocumentFilter
 
     protected void notifyEvent(int aId, PageMetaData aPMD)
     {
-        notifyEvent(aId, aPMD.getDocument(), aPMD.getPage(),
-                aPMD.getPageCount(), aPMD.getPageIndex());
+        notifyEvent(aId, aPMD.getDocument(), aPMD.getPage(), aPMD.getPageCount(), aPMD.getPageIndex());
     }
 
 
@@ -281,8 +279,7 @@ public class OCRFilter extends AbstractDocumentFilter
             {
                 notifyEvent(DocumentFilterEvent.EVENT_NEXT_PAGE, pmd);
 
-                if (!isToProcess(pmd.getDocument(), pmd.getPage(),
-                        pmd.getPageIndex()))
+                if (!isToProcess(pmd.getDocument(), pmd.getPage(), pmd.getPageIndex()))
                 {
                     notifyEvent(DocumentFilterEvent.EVENT_PAGE_IGNORED, pmd);
                     continue;
@@ -301,16 +298,12 @@ public class OCRFilter extends AbstractDocumentFilter
                     }
 
                     long start = System.currentTimeMillis();
-                    BufferedImage img = renderer.renderImage(pmd.getPageIndex(),
-                            mScale, ImageType.BINARY);
+                    BufferedImage img = renderer.renderImage(pmd.getPageIndex(), mScale, ImageType.BINARY);
 
-                    LOGGER.log(Level.FINE, "Rendering took: {0}ms",
-                            (System.currentTimeMillis() - start));
+                    LOGGER.log(Level.FINE, "Rendering took: {0}ms", (System.currentTimeMillis() - start));
                     start = System.currentTimeMillis();
-                    List<Word> words = trOCR.getWords(img,
-                            TessAPI.TessPageIteratorLevel.RIL_WORD);
-                    LOGGER.log(Level.FINE, "OCR took: {0}ms",
-                            (System.currentTimeMillis() - start));
+                    List<Word> words = trOCR.getWords(img, TessAPI.TessPageIteratorLevel.RIL_WORD);
+                    LOGGER.log(Level.FINE, "OCR took: {0}ms", (System.currentTimeMillis() - start));
                     pmd.setWords(words);
                 }
                 catch (Exception ex)
@@ -330,8 +323,7 @@ public class OCRFilter extends AbstractDocumentFilter
     public PDDocument filter(PDDocument aDocument)
     {
         int pageCount = aDocument.getNumberOfPages();
-        notifyEvent(DocumentFilterEvent.EVENT_NEW_DOCUMENT, aDocument, null,
-                pageCount, -1);
+        notifyEvent(DocumentFilterEvent.EVENT_NEW_DOCUMENT, aDocument, null, pageCount, -1);
 
         List<PageMetaData> pmds = new ArrayList<>();
         int pidx = -1;
@@ -341,8 +333,7 @@ public class OCRFilter extends AbstractDocumentFilter
             pmds.add(new PageMetaData(aDocument, pageCount, page, pidx));
         }
 
-        final ItemProvider<PageMetaData> metaProvider = new ItemProvider<>(
-                pmds);
+        final ItemProvider<PageMetaData> metaProvider = new ItemProvider<>(pmds);
 
         Runnable r = () -> {
             process(metaProvider);
@@ -352,8 +343,7 @@ public class OCRFilter extends AbstractDocumentFilter
 
         if (tc <= 1)
         {
-            LOGGER.log(Level.FINE,
-                    "Will process in actual thread (single threaded).");
+            LOGGER.log(Level.FINE, "Will process in actual thread (single threaded).");
             r.run();
         }
         else
@@ -385,11 +375,17 @@ public class OCRFilter extends AbstractDocumentFilter
 
         for (PageMetaData pmd : pmds)
         {
-            applyWords(pmd);
+            try
+            {
+                applyWords(pmd);
+            }
+            catch (Exception ex)
+            {
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            }
         }
 
-        notifyEvent(DocumentFilterEvent.EVENT_DOCUMENT_DONE, aDocument, null,
-                pageCount, -1);
+        notifyEvent(DocumentFilterEvent.EVENT_DOCUMENT_DONE, aDocument, null, pageCount, -1);
 
         return aDocument;
     }
@@ -432,8 +428,7 @@ public class OCRFilter extends AbstractDocumentFilter
 
         private List<Word> mWords;
 
-        public PageMetaData(PDDocument aDocument, int aPageCount, PDPage aPage,
-                int aPageIndex)
+        public PageMetaData(PDDocument aDocument, int aPageCount, PDPage aPage, int aPageIndex)
         {
             mDocument = aDocument;
             mPageCount = aPageCount;
