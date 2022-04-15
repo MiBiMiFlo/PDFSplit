@@ -40,7 +40,7 @@ public class TesseractFactory
      * The page segmentation mode. See {@link ITessAPI.TessPageSegMode} for
      * valid values.
      */
-    private int mPageSegMode = ITessAPI.TessPageSegMode.PSM_AUTO_OSD;
+    private int mPageSegMode = -1;
 
     /**
      * The OCR engine mode to use. See {@link ITessAPI.TessOcrEngineMode} for
@@ -168,8 +168,14 @@ public class TesseractFactory
         aTesseract.setLanguage(mLanguage);
         aTesseract.setDatapath(mDatapath);
         aTesseract.setOcrEngineMode(mOcrEngineMode);
-        aTesseract.setPageSegMode(mPageSegMode);
-        aTesseract.setConfigs(mConfigList);
+        if (mPageSegMode != -1)
+        {
+            aTesseract.setPageSegMode(mPageSegMode);
+        }
+        if (mConfigList.size() > 0)
+        {
+            aTesseract.setConfigs(mConfigList);
+        }
         return aTesseract;
     }
 
