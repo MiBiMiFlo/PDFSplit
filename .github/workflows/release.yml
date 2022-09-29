@@ -1,13 +1,11 @@
-# This workflow will run on any push or pull request to main branch. It is meant to do regression tests.
+# This workflow will build and store result on new release (tag)
 
-name: Java CI with Maven
+name: Build on new Tag
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
+  create:
+    tags:
+      - v*
 jobs:
   build:
 
@@ -28,4 +26,3 @@ jobs:
       with:
         name: release
         path: target/pdfsplit*.zip
-        retention-days: 5
