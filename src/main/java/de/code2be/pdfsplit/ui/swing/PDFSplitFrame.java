@@ -929,12 +929,15 @@ public class PDFSplitFrame extends JFrame
                 int res = JOptionPane.showConfirmDialog(PDFSplitFrame.this, msg,
                         title, JOptionPane.YES_NO_CANCEL_OPTION,
                         JOptionPane.WARNING_MESSAGE);
-                if (res == JOptionPane.YES_OPTION)
+                if (res != JOptionPane.YES_OPTION)
                 {
-                    PDFSplitFrame.this.setVisible(false);
-                    PDFSplitFrame.this.dispose();
+                    // do not close
+                    return;
                 }
             }
+            
+            PDFSplitFrame.this.setVisible(false);
+            PDFSplitFrame.this.dispose();
         }
     };
 
