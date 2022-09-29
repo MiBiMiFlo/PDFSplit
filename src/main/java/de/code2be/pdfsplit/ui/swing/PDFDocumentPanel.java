@@ -4,9 +4,13 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -23,6 +27,9 @@ import de.code2be.pdfsplit.PDFHelper;
 public class PDFDocumentPanel extends JPanel
 {
 
+    private static final Logger LOGGER = Logger
+            .getLogger(PDFDocumentPanel.class.getName());
+
     private static final long serialVersionUID = 5228203932797387514L;
 
     private final PDFSplitFrame mFrame;
@@ -38,6 +45,8 @@ public class PDFDocumentPanel extends JPanel
     private JLabel mLblFileName;
 
     private final JScrollPane mScrollPane;
+
+    private boolean mUnsaved = true;
 
     public PDFDocumentPanel(PDFSplitFrame aFrame, PDDocument aDocument,
             File aFile)
@@ -129,12 +138,31 @@ public class PDFDocumentPanel extends JPanel
     }
 
 
+    public boolean isUnsaved()
+    {
+        return mUnsaved;
+    }
+
+
+    public void setUnsaved(boolean aUnsaved)
+    {
+        if (mUnsaved != aUnsaved)
+        {
+            String oldName = getName();
+            mUnsaved = aUnsaved;
+            String newName = getName();
+            firePropertyChange("name", oldName, newName);
+        }
+    }
+
+
     public void save()
     {
         if (mFile == null)
         {
             JOptionPane.showMessageDialog(this,
-                    "Save wothout file is not implemented for PDFDocumentPanel!");
+                    "Save wothout file is not implemented for PDFDocumentPanel!",
+                    "ERROR: Not implemented.", JOptionPane.ERROR_MESSAGE);
         }
         try
         {
@@ -148,10 +176,13 @@ public class PDFDocumentPanel extends JPanel
                 }
             }
             newDoc.save(mFile);
+            setUnsaved(false);
         }
         catch (Exception ex)
         {
-            ex.printStackTrace();
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            JOptionPane.showMessageDialog(this, ex.getMessage(),
+                    "ERROR: Can not save to file", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -166,7 +197,20 @@ public class PDFDocumentPanel extends JPanel
     @Override
     public String getName()
     {
-        return (mFile != null) ? mFile.getName() : super.getName();
+        StringBuilder sb = new StringBuilder();
+        if (isUnsaved())
+        {
+            sb.append("*");
+        }
+        if (mFile != null)
+        {
+            sb.append(mFile.getName());
+        }
+        else
+        {
+            sb.append(super.getName());
+        }
+        return sb.toString();
     }
 
 
@@ -213,7 +257,9 @@ public class PDFDocumentPanel extends JPanel
         {
             if (c instanceof PDFPagePanel)
             {
-                remove(c);
+                mMainPanel.remove(c);
+                ((PDFPagePanel) c).removePropertyChangeListener("enabled",
+                        mPageEnabledChanged);
             }
         }
         int pnum = 0;
@@ -222,10 +268,20 @@ public class PDFDocumentPanel extends JPanel
             PDFPagePanel pp = new PDFPagePanel(this, page, pnum);
             // pp.addMouseWheelListener((aE) -> mFrame.zoomOnMouseWheel(aE));
             pp.setPreferredSize(mPageSize);
-            pp.addPropertyChangeListener("enabled",
-                    (aEvt) -> updateStatusLabel());
+            pp.addPropertyChangeListener("enabled", mPageEnabledChanged);
             mMainPanel.add(pp);
             pnum++;
         }
     }
+
+    private final PropertyChangeListener mPageEnabledChanged = new PropertyChangeListener()
+    {
+
+        @Override
+        public void propertyChange(PropertyChangeEvent aEvt)
+        {
+            updateStatusLabel();
+            setUnsaved(true);
+        }
+    };
 }

@@ -24,6 +24,9 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.MouseWheelEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
@@ -86,7 +89,8 @@ public class PDFSplitFrame extends JFrame
 
     private static final long serialVersionUID = 5992521065908641880L;
 
-    private static final Logger LOGGER = Logger.getLogger(PDFSplitFrame.class.getName());
+    private static final Logger LOGGER = Logger
+            .getLogger(PDFSplitFrame.class.getName());
 
     private File mPDFFile;
 
@@ -113,23 +117,28 @@ public class PDFSplitFrame extends JFrame
      */
     public PDFSplitFrame()
     {
-        super(I18n.getMessage(PDFSplitFrame.class, "TITLE", I18n.getMessage(PDFSplitFrame.class, "version")));
+        super(I18n.getMessage(PDFSplitFrame.class, "TITLE",
+                I18n.getMessage(PDFSplitFrame.class, "version")));
         try
         {
-            URL imgURL = getClass().getResource("/de/code2be/pdfsplit/ui/icons/64/pdfsplit.png");
+            URL imgURL = getClass().getResource(
+                    "/de/code2be/pdfsplit/ui/icons/64/pdfsplit.png");
             setIconImage(new ImageIcon(imgURL).getImage());
         }
         catch (Exception ex)
         {
             LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
         }
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        addWindowListener(mWindowCloseListener);
+
         initializeComponents();
         setMinimumSize(new Dimension(800, 900));
         setLocationByPlatform(true);
         pack();
         setVisible(true);
-        mPdfFileIcon = new ImageIcon(getClass().getResource("/de/code2be/pdfsplit/ui/icons/16/pdf.png"));
+        mPdfFileIcon = new ImageIcon(getClass()
+                .getResource("/de/code2be/pdfsplit/ui/icons/16/pdf.png"));
     }
 
 
@@ -205,7 +214,8 @@ public class PDFSplitFrame extends JFrame
         Object ks = aAction.getValue(Action.ACCELERATOR_KEY);
         if (ks instanceof KeyStroke)
         {
-            ((JComponent) getContentPane()).getInputMap().put((KeyStroke) ks, key);
+            ((JComponent) getContentPane()).getInputMap().put((KeyStroke) ks,
+                    key);
         }
     }
 
@@ -228,6 +238,24 @@ public class PDFSplitFrame extends JFrame
     }
 
 
+    protected int getKeyCodeForMnemonic(String aMnemonic)
+    {
+        try
+        {
+            KeyStroke ks = KeyStroke.getKeyStroke(aMnemonic);
+            if (ks != null)
+            {
+                return ks.getKeyCode();
+            }
+        }
+        catch (Exception ex)
+        {
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+        }
+        return 0;
+    }
+
+
     /**
      * Create the menu bar to be displayed at the top of the frame.
      * 
@@ -237,7 +265,10 @@ public class PDFSplitFrame extends JFrame
     protected JMenuBar createMenuBar()
     {
         JMenuBar res = new JMenuBar();
-        JMenu fileMenu = new JMenu(I18n.getMessage(PDFSplitFrame.class, "MENU.FILE.name"));
+        JMenu fileMenu = new JMenu(
+                I18n.getMessage(PDFSplitFrame.class, "MENU.FILE.name"));
+        fileMenu.setMnemonic(getKeyCodeForMnemonic(
+                I18n.getMessage(PDFSplitFrame.class, "MENU.FILE.mnemonic")));
         fileMenu.add(getAction(OpenFileAction.ACTION_NAME));
         fileMenu.addSeparator();
         fileMenu.add(getAction(SaveAction.ACTION_NAME));
@@ -251,11 +282,17 @@ public class PDFSplitFrame extends JFrame
         fileMenu.add(getAction(ShowSettingsAction.ACTION_NAME));
         res.add(fileMenu);
 
-        JMenu editMenu = new JMenu(I18n.getMessage(PDFSplitFrame.class, "MENU.EDIT.name"));
+        JMenu editMenu = new JMenu(
+                I18n.getMessage(PDFSplitFrame.class, "MENU.EDIT.name"));
+        editMenu.setMnemonic(getKeyCodeForMnemonic(
+                I18n.getMessage(PDFSplitFrame.class, "MENU.EDIT.mnemonic")));
         editMenu.add(getAction(RenameAction.ACTION_NAME));
         res.add(editMenu);
 
-        JMenu viewMenu = new JMenu(I18n.getMessage(PDFSplitFrame.class, "MENU.VIEW.name"));
+        JMenu viewMenu = new JMenu(
+                I18n.getMessage(PDFSplitFrame.class, "MENU.VIEW.name"));
+        viewMenu.setMnemonic(getKeyCodeForMnemonic(
+                I18n.getMessage(PDFSplitFrame.class, "MENU.VIEW.mnemonic")));
         viewMenu.add(getAction(ZoomInAction.ACTION_NAME));
         viewMenu.add(getAction(ZoomOutAction.ACTION_NAME));
         res.add(viewMenu);
@@ -304,7 +341,8 @@ public class PDFSplitFrame extends JFrame
             catch (Exception ex)
             {
                 LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-                setStatusText(I18n.getMessage("main.error.loadConfig", ex.getLocalizedMessage()));
+                setStatusText(I18n.getMessage("main.error.loadConfig",
+                        ex.getLocalizedMessage()));
             }
 
         }
@@ -346,7 +384,8 @@ public class PDFSplitFrame extends JFrame
             docPane.setPreviewSize(aSize);
         }
 
-        setStatusText(I18n.getMessage(PDFSplitFrame.class, "main.setPreviewSize", aSize.width, aSize.height));
+        setStatusText(I18n.getMessage(PDFSplitFrame.class,
+                "main.setPreviewSize", aSize.width, aSize.height));
     }
 
 
@@ -425,7 +464,8 @@ public class PDFSplitFrame extends JFrame
      */
     public void showError(String aMessage, String aTitle, Exception aException)
     {
-        setStatusText(I18n.getMessage(PDFSplitFrame.class, "main.errorMessage", aMessage));
+        setStatusText(I18n.getMessage(PDFSplitFrame.class, "main.errorMessage",
+                aMessage));
         String longMessage = "";
         if (aMessage != null)
         {
@@ -441,7 +481,8 @@ public class PDFSplitFrame extends JFrame
         }
         final String finalMessage = longMessage;
         SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(this, finalMessage, aTitle, JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, finalMessage, aTitle,
+                    JOptionPane.ERROR_MESSAGE);
         });
 
     }
@@ -478,7 +519,8 @@ public class PDFSplitFrame extends JFrame
         sb.append("<br/>");
         if (aEvent != null)
         {
-            sb.append(I18n.getMessage(PDFSplitFrame.class, "main.fileInfo.pages", aEvent.getPageCount()));
+            sb.append(I18n.getMessage(PDFSplitFrame.class,
+                    "main.fileInfo.pages", aEvent.getPageCount()));
             sb.append("<br/>");
 
             if (aEvent.getID() == SplitStatusEvent.EVENT_SPLITTING_FINISHED)
@@ -488,12 +530,15 @@ public class PDFSplitFrame extends JFrame
                 {
                     realPageCount += doc.getNumberOfPages();
                 }
-                sb.append(I18n.getMessage(PDFSplitFrame.class, "main.fileInfo.finished", realPageCount,
+                sb.append(I18n.getMessage(PDFSplitFrame.class,
+                        "main.fileInfo.finished", realPageCount,
                         aEvent.getDocumentCount()));
             }
             else
             {
-                sb.append(I18n.getMessage(PDFSplitFrame.class, "main.fileInfo.processed", (aEvent.getCurrentPage() + 1),
+                sb.append(I18n.getMessage(PDFSplitFrame.class,
+                        "main.fileInfo.processed",
+                        (aEvent.getCurrentPage() + 1),
                         aEvent.getDocumentCount()));
             }
             sb.append("<br/>");
@@ -514,7 +559,8 @@ public class PDFSplitFrame extends JFrame
     protected TesseractFactory createOCRFactory()
     {
         TesseractFactory res = new TesseractFactory();
-        File dataPath = new File(getConfig().getConfigValS(PROP_OCR_DATAPATH, "./tessdata"));
+        File dataPath = new File(
+                getConfig().getConfigValS(PROP_OCR_DATAPATH, "./tessdata"));
 
         String language = getConfig().getConfigValS(PROP_OCR_LANG, "eng");
 
@@ -527,7 +573,8 @@ public class PDFSplitFrame extends JFrame
 
         try
         {
-            int engineMode = getConfig().getConfigValI(PROP_OCR_ENGINE_MODE, TessOcrEngineMode.OEM_LSTM_ONLY);
+            int engineMode = getConfig().getConfigValI(PROP_OCR_ENGINE_MODE,
+                    TessOcrEngineMode.OEM_LSTM_ONLY);
             res.setOcrEngineMode(engineMode);
         }
         catch (Exception ex)
@@ -541,7 +588,8 @@ public class PDFSplitFrame extends JFrame
 
     protected TesseractC createOCREngine()
     {
-        File dataPath = new File(getConfig().getConfigValS(PROP_OCR_DATAPATH, "./tessdata"));
+        File dataPath = new File(
+                getConfig().getConfigValS(PROP_OCR_DATAPATH, "./tessdata"));
 
         String language = getConfig().getConfigValS(PROP_OCR_LANG, "eng");
 
@@ -586,7 +634,8 @@ public class PDFSplitFrame extends JFrame
 
         if (!aFile.isFile())
         {
-            throw new IllegalArgumentException(aFile.getAbsolutePath() + " is not a valid file!");
+            throw new IllegalArgumentException(
+                    aFile.getAbsolutePath() + " is not a valid file!");
         }
 
         synchronized (this)
@@ -620,35 +669,44 @@ public class PDFSplitFrame extends JFrame
         {
             mPDFFile = aFile;
             updateFileInfoLabel(null);
-            setStatusText(I18n.getMessage(PDFSplitFrame.class, "open.msgWillOpen", mPDFFile.getAbsolutePath()));
+            setStatusText(I18n.getMessage(PDFSplitFrame.class,
+                    "open.msgWillOpen", mPDFFile.getAbsolutePath()));
             mPDFDocument = PDDocument.load(mPDFFile);
             if (getConfig().getConfigValB(PROP_FILTER_DO_OCR, true))
             {
                 TesseractFactory tf = createOCRFactory();
                 OCRFilter ocrFilter = new OCRFilter(tf);
-                ocrFilter.setScale(getConfig().getConfigValF(PROP_OCR_IMG_SCALE, 1.0f));
+                ocrFilter.setScale(
+                        getConfig().getConfigValF(PROP_OCR_IMG_SCALE, 1.0f));
                 ocrFilter.addDocumentFilterListener((aEvent) -> {
                     if (aEvent.getID() == DocumentFilterEvent.EVENT_NEXT_PAGE)
                     {
-                        setStatusText(I18n.getMessage(PDFSplitFrame.class, "open.msgOCR", mPDFFile.getName(),
-                                aEvent.getPageIndex() + 1, aEvent.getPageCount()));
+                        setStatusText(I18n.getMessage(PDFSplitFrame.class,
+                                "open.msgOCR", mPDFFile.getName(),
+                                aEvent.getPageIndex() + 1,
+                                aEvent.getPageCount()));
                     }
                 });
                 mPDFDocument = ocrFilter.filter(mPDFDocument);
             }
-            setStatusText(I18n.getMessage(PDFSplitFrame.class, "open.msgSplitting", mPDFFile.getAbsolutePath()));
+            setStatusText(I18n.getMessage(PDFSplitFrame.class,
+                    "open.msgSplitting", mPDFFile.getAbsolutePath()));
 
             SmartSplitter smsp = new SmartSplitter();
             smsp.addStatusListener(mSplitListener);
 
-            boolean doQrSep = getConfig().getConfigValB(PROP_SEPARATOR_USE_QR, true);
-            boolean doTextSep = getConfig().getConfigValB(PROP_SEPARATOR_USE_TEXT, true);
+            boolean doQrSep = getConfig().getConfigValB(PROP_SEPARATOR_USE_QR,
+                    true);
+            boolean doTextSep = getConfig()
+                    .getConfigValB(PROP_SEPARATOR_USE_TEXT, true);
             if (doQrSep)
             {
-                String qrCode = getConfig().getConfigValS(PROP_SEPARATOR_QR_CODE, null);
+                String qrCode = getConfig()
+                        .getConfigValS(PROP_SEPARATOR_QR_CODE, null);
                 if (qrCode != null && qrCode.trim().length() > 0)
                 {
-                    LOGGER.log(Level.INFO, "Will use QR code splitter for: {0}", qrCode);
+                    LOGGER.log(Level.INFO, "Will use QR code splitter for: {0}",
+                            qrCode);
                     smsp.addSplitPageIdentifier(new QRCodeIdentifier(qrCode));
                 }
             }
@@ -660,10 +718,13 @@ public class PDFSplitFrame extends JFrame
             if (doTextSep)
             {
                 sepStr = getConfig().getConfigValS(PROP_SEPARATOR_TEXT, null);
-                sepArr = (sepStr != null && sepStr.trim().length() > 0) ? sepStr.split(";") : new String[0];
+                sepArr = (sepStr != null && sepStr.trim().length() > 0)
+                        ? sepStr.split(";")
+                        : new String[0];
                 try
                 {
-                    reqFindCount = getConfig().getConfigValI(PROP_SEPARATOR_MATCH_COUNT, 1);
+                    reqFindCount = getConfig()
+                            .getConfigValI(PROP_SEPARATOR_MATCH_COUNT, 1);
                 }
                 catch (Exception ex)
                 {
@@ -680,31 +741,40 @@ public class PDFSplitFrame extends JFrame
             {
                 if (sepArr.length > 0)
                 {
-                    boolean doOCR = getConfig().getConfigValB(PROP_SEPARATOR_DO_OCR, true);
+                    boolean doOCR = getConfig()
+                            .getConfigValB(PROP_SEPARATOR_DO_OCR, true);
                     if (doOCR)
                     {
-                        boolean forceOCR = getConfig().getConfigValB(PROP_SEPARATOR_FORCE_OCR, false);
+                        boolean forceOCR = getConfig()
+                                .getConfigValB(PROP_SEPARATOR_FORCE_OCR, false);
 
                         LOGGER.log(Level.INFO,
-                                "Will use OCR based text splitter for: {0} (findCount= {1}, ForceOCR={2})", new Object[]
+                                "Will use OCR based text splitter for: {0} (findCount= {1}, ForceOCR={2})",
+                                new Object[]
                                 {
                                         sepStr, reqFindCount, forceOCR
                                 });
-                        TextSplitIdentifierOCR ocrSplitter = new TextSplitIdentifierOCR(sepArr, reqFindCount, forceOCR);
+                        TextSplitIdentifierOCR ocrSplitter = new TextSplitIdentifierOCR(
+                                sepArr, reqFindCount, forceOCR);
                         ocrSplitter.setTesseract(ocrEng = createOCREngine());
-                        ocrSplitter.setScale(getConfig().getConfigValF(PROP_OCR_IMG_SCALE, 1.0f));
+                        ocrSplitter.setScale(getConfig()
+                                .getConfigValF(PROP_OCR_IMG_SCALE, 1.0f));
                         smsp.addSplitPageIdentifier(ocrSplitter);
                     }
                     else
                     {
-                        LOGGER.log(Level.INFO, "Will use normal text splitter for: {0} (findCount={1})", new Object[]
-                        {
-                                sepStr, reqFindCount
-                        });
-                        smsp.addSplitPageIdentifier(new TextSplitIdentifier(sepArr, reqFindCount));
+                        LOGGER.log(Level.INFO,
+                                "Will use normal text splitter for: {0} (findCount={1})",
+                                new Object[]
+                                {
+                                        sepStr, reqFindCount
+                                });
+                        smsp.addSplitPageIdentifier(
+                                new TextSplitIdentifier(sepArr, reqFindCount));
                     }
                 }
-                setStatusText("Will split file " + mPDFFile.getAbsolutePath() + ".");
+                setStatusText(
+                        "Will split file " + mPDFFile.getAbsolutePath() + ".");
                 smsp.split(mPDFDocument);
             }
             finally
@@ -738,17 +808,24 @@ public class PDFSplitFrame extends JFrame
     protected void addTabForDoc(PDDocument aDocument)
     {
         mTabIdx++;
-        String fileName = mPDFFile.getName().replace(".pdf", "_" + mTabIdx + ".pdf");
-        PDFDocumentPanel pnl = new PDFDocumentPanel(this, aDocument, new File(mPDFFile.getParent(), fileName));
+        String fileName = mPDFFile.getName().replace(".pdf",
+                "_" + mTabIdx + ".pdf");
+        PDFDocumentPanel pnl = new PDFDocumentPanel(this, aDocument,
+                new File(mPDFFile.getParent(), fileName));
 
         if (getConfig().getConfigValB(PROP_FILTER_DO_EMPTY_PAGE, true))
         {
             EmptyPageChecker epc = new EmptyPageChecker(aDocument);
-            epc.setBlockCountH(Integer.valueOf(getConfig().getConfigValI(PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_H, 10)));
-            epc.setBlockCountV(getConfig().getConfigValI(PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_V, 10));
-            epc.setPixelFilledThreshold(getConfig().getConfigValI(PROP_FILTER_EMPTY_PAGE_TH_PIXEL, 25));
-            epc.setBlockFilledThreshold(getConfig().getConfigValI(PROP_FILTER_EMPTY_PAGE_TH_BLOCK, 2));
-            epc.setPageFilledThreshold(getConfig().getConfigValI(PROP_FILTER_EMPTY_PAGE_TH_PAGE, 6));
+            epc.setBlockCountH(Integer.valueOf(getConfig()
+                    .getConfigValI(PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_H, 10)));
+            epc.setBlockCountV(getConfig()
+                    .getConfigValI(PROP_FILTER_EMPTY_PAGE_BLOCKCOUNT_V, 10));
+            epc.setPixelFilledThreshold(getConfig()
+                    .getConfigValI(PROP_FILTER_EMPTY_PAGE_TH_PIXEL, 25));
+            epc.setBlockFilledThreshold(getConfig()
+                    .getConfigValI(PROP_FILTER_EMPTY_PAGE_TH_BLOCK, 2));
+            epc.setPageFilledThreshold(getConfig()
+                    .getConfigValI(PROP_FILTER_EMPTY_PAGE_TH_PAGE, 6));
 
             int idx = 0;
             for (PDFPagePanel pagePanel : pnl.getPagePanels())
@@ -761,7 +838,7 @@ public class PDFSplitFrame extends JFrame
             }
         }
 
-        JLabel lbl = new JLabel(fileName, mPdfFileIcon, JLabel.LEFT);
+        JLabel lbl = new JLabel(pnl.getName(), mPdfFileIcon, JLabel.LEFT);
         lbl.setFont(mDocsPane.getFont());
 
         pnl.setPreviewSize(getPreviewSize());
@@ -771,7 +848,8 @@ public class PDFSplitFrame extends JFrame
 
         Runnable r = () -> {
             int size = mDocsPane.getTabCount();
-            mDocsPane.insertTab(fileName, mPdfFileIcon, pnl, fileName, size);
+            mDocsPane.insertTab(pnl.getName(), mPdfFileIcon, pnl, pnl.getName(),
+                    size);
             mDocsPane.setSelectedIndex(size);
             mDocsPane.setTabComponentAt(size, lbl);
         };
@@ -786,7 +864,8 @@ public class PDFSplitFrame extends JFrame
         {
             if (aEvent.getScrollType() == MouseWheelEvent.WHEEL_UNIT_SCROLL)
             {
-                float factor = 1.0f + (((float) aEvent.getScrollAmount()) * 0.1f);
+                float factor = 1.0f
+                        + (((float) aEvent.getScrollAmount()) * 0.1f);
 
                 Dimension oldSize = getPreviewSize();
                 Dimension newSize = null;
@@ -794,12 +873,14 @@ public class PDFSplitFrame extends JFrame
                 if (aEvent.getWheelRotation() > 0)
                 {
                     // zoom out
-                    newSize = new Dimension((int) (oldSize.getWidth() / factor), (int) (oldSize.getHeight() / factor));
+                    newSize = new Dimension((int) (oldSize.getWidth() / factor),
+                            (int) (oldSize.getHeight() / factor));
                 }
                 else
                 {
                     // zoom in
-                    newSize = new Dimension((int) (oldSize.getWidth() * factor), (int) (oldSize.getHeight() * factor));
+                    newSize = new Dimension((int) (oldSize.getWidth() * factor),
+                            (int) (oldSize.getHeight() * factor));
                 }
                 setPreviewSize(newSize);
                 aEvent.consume();
@@ -822,6 +903,37 @@ public class PDFSplitFrame extends JFrame
             {
                 final PDDocument doc = aEvent.getDocument();
                 addTabForDoc(doc);
+            }
+        }
+    };
+
+    private final WindowListener mWindowCloseListener = new WindowAdapter()
+    {
+
+        public void windowClosing(WindowEvent e)
+        {
+            int unsaved = 0;
+            for (PDFDocumentPanel docPnl : getDocumentPanels())
+            {
+                if (docPnl.isUnsaved())
+                {
+                    unsaved++;
+                }
+            }
+            if (unsaved > 0)
+            {
+                String msg = I18n.getMessage(PDFSplitFrame.class,
+                        "main.confirm.closeUnsaved.message", unsaved);
+                String title = I18n.getMessage(PDFSplitFrame.class,
+                        "main.confirm.closeUnsaved.title", unsaved);
+                int res = JOptionPane.showConfirmDialog(PDFSplitFrame.this, msg,
+                        title, JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.WARNING_MESSAGE);
+                if (res == JOptionPane.YES_OPTION)
+                {
+                    PDFSplitFrame.this.setVisible(false);
+                    PDFSplitFrame.this.dispose();
+                }
             }
         }
     };
