@@ -19,6 +19,9 @@ jobs:
         java-version: '11'
         distribution: 'temurin'
         cache: maven
+    - name: Initialize some output variables
+      id: vars
+      run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Create Release
@@ -39,5 +42,5 @@ jobs:
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }} 
         asset_path: ./target/pdfsplit.zip
-        asset_name: pdfsplit-${{ github.ref }}.zip
+        asset_name: pdfsplit-${{ steps.vars.outputs.tag }}.zip
         asset_content_type: application/zip
