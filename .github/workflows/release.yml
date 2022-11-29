@@ -23,7 +23,7 @@ jobs:
       run: mvn -B package --file pom.xml
     - name: Create Release
         uses: actions/create-release@v1
-        id: create_release
+        id: create_release2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
