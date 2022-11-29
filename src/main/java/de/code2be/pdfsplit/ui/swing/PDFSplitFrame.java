@@ -23,6 +23,10 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetDropEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -182,6 +186,9 @@ public class PDFSplitFrame extends JFrame
         mDocsPane.setFont(mDocsPane.getFont().deriveFont(14.0f));
 
         mDocsPane.addMouseWheelListener((aE) -> zoomOnMouseWheel(aE));
+
+        mDocsPane.setDropTarget(mDocPaneDropTarget);
+
     }
 
 
@@ -935,9 +942,48 @@ public class PDFSplitFrame extends JFrame
                     return;
                 }
             }
-            
+
             PDFSplitFrame.this.setVisible(false);
             PDFSplitFrame.this.dispose();
+        }
+    };
+
+    private final DropTarget mDocPaneDropTarget = new DropTarget()
+    {
+
+        private static final long serialVersionUID = -6714739497977861416L;
+
+        @SuppressWarnings("unchecked")
+        public synchronized void drop(DropTargetDropEvent aEvent)
+        {
+            try
+            {
+                if (aEvent.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
+                {
+                    aEvent.acceptDrop(DnDConstants.ACTION_COPY);
+                    final List<File> droppedFiles = (List<File>) aEvent
+                            .getTransferable()
+                            .getTransferData(DataFlavor.javaFileListFlavor);
+                    aEvent.dropComplete(true);
+                    Thread t = new Thread(() -> {
+                        for (File file : droppedFiles)
+                        {
+                            openPDFFile(file);
+                        }
+                    });
+                    t.setDaemon(true);
+                    t.start();
+                }
+                else
+                {
+                    aEvent.rejectDrop();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            }
         }
     };
 
