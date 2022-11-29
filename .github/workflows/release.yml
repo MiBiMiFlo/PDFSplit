@@ -21,11 +21,6 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: release
-        path: target/pdfsplit*.zip
     - name: Create Release
         uses: actions/create-release@v1
         id: create_release
