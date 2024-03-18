@@ -55,6 +55,7 @@ import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 
 import de.code2be.help.I18n;
@@ -678,7 +679,7 @@ public class PDFSplitFrame extends JFrame
             updateFileInfoLabel(null);
             setStatusText(I18n.getMessage(PDFSplitFrame.class,
                     "open.msgWillOpen", mPDFFile.getAbsolutePath()));
-            mPDFDocument = PDDocument.load(mPDFFile);
+            mPDFDocument = Loader.loadPDF(mPDFFile);
             if (getConfig().getConfigValB(PROP_FILTER_DO_OCR, true))
             {
                 TesseractFactory tf = createOCRFactory();
@@ -872,7 +873,7 @@ public class PDFSplitFrame extends JFrame
             if (aEvent.getScrollType() == MouseWheelEvent.WHEEL_UNIT_SCROLL)
             {
                 float factor = 1.0f
-                        + (((float) aEvent.getScrollAmount()) * 0.1f);
+                        + ((aEvent.getScrollAmount()) * 0.1f);
 
                 Dimension oldSize = getPreviewSize();
                 Dimension newSize = null;
@@ -917,6 +918,7 @@ public class PDFSplitFrame extends JFrame
     private final WindowListener mWindowCloseListener = new WindowAdapter()
     {
 
+        @Override
         public void windowClosing(WindowEvent e)
         {
             int unsaved = 0;
@@ -953,6 +955,7 @@ public class PDFSplitFrame extends JFrame
 
         private static final long serialVersionUID = -6714739497977861416L;
 
+        @Override
         @SuppressWarnings("unchecked")
         public synchronized void drop(DropTargetDropEvent aEvent)
         {

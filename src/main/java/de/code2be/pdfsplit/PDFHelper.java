@@ -8,6 +8,7 @@ import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.io.MemoryUsageSetting;
+import org.apache.pdfbox.io.ScratchFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -43,8 +44,18 @@ public class PDFHelper
     public static PDDocument createNewDocument(MemoryUsageSetting aMemSet,
             PDDocument aSource)
     {
-        PDDocument res = aMemSet == null ? new PDDocument()
-                : new PDDocument(aMemSet);
+        PDDocument res;
+        if (aMemSet == null)
+        {
+            res = new PDDocument();
+        }
+        else
+        {
+            res = new PDDocument(() -> {
+                return new ScratchFile(aMemSet);
+            });
+        }
+
         copyDocumentAttributes(aSource, res);
         return res;
     }
@@ -90,7 +101,7 @@ public class PDFHelper
                     LOGGER.warning("/Root and /Info share the same dictionary");
                     continue;
                 }
-                if (COSName.TYPE.equals((Object) key)) continue;
+                if (COSName.TYPE.equals(key)) continue;
                 destDocumentInformationDictionary.setItem(key, value);
             }
             aTarget.setDocumentInformation(new PDDocumentInformation(

@@ -27,7 +27,7 @@
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
-            <version>2.0.27</version>
+            <version>3.0.2</version>
         </dependency>
         <!-- We need a "not so strict" JPEG reader to be able to preview PDFs from scanners that do not follow the JPEG standard for 100% -->
         <dependency>
@@ -39,18 +39,18 @@
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>core</artifactId>
-            <version>3.5.1</version>
+            <version>3.5.3</version>
         </dependency>
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>javase</artifactId>
-            <version>3.5.1</version>
+            <version>3.5.3</version>
         </dependency>
         <!-- We use tesseract to do OCR -->
         <dependency>
             <groupId>net.sourceforge.tess4j</groupId>
             <artifactId>tess4j</artifactId>
-            <version>5.4.0</version>
+            <version>5.11.0</version>
             <exclusions>
                 <!-- We only use basic OCR features, so we don't need all dependencies -->
                 <exclusion>
@@ -81,7 +81,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-                <dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit.jupiter.version}</version>

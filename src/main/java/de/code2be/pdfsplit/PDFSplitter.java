@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 
 import javax.swing.UIManager;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 
 import de.code2be.pdfsplit.split.TextSplitIdentifier;
@@ -104,7 +105,7 @@ public class PDFSplitter
                     "Directory " + aDirectory + " does not exist!");
         }
 
-        PDDocument doc = PDDocument.load(aFile);
+        PDDocument doc = Loader.loadPDF(aFile);
         int pgCount = doc.getNumberOfPages();
         System.out.println("Found " + pgCount + " pages!");
 
