@@ -5,3 +5,7 @@
 /.settings/
 .classpath
 .project
+
+# Tesseract data
+/tessdata/
+
