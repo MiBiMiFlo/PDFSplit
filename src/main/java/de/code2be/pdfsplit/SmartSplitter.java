@@ -79,28 +79,59 @@ public class SmartSplitter
      */
     private final List<ISplitPageIdentifier> mSplitPageIdentifiers = new ArrayList<>();
 
+    /**
+     * The target directory to save split PDF files in.
+     */
     private File mTargetDirectory;
 
+    /**
+     * The target name pattern to be used as file name when creating split PDF
+     * files.
+     */
     private String mNamePattern;
 
+    /**
+     * The target directory is the directory to save split PDF files in.
+     * 
+     * @return the current configured target directory. This might be null if no
+     *         target directory is configured.
+     */
     public File getTargetDirectory()
     {
         return mTargetDirectory;
     }
 
 
+    /**
+     * 
+     * @param aTargetDirectory
+     *            the new target directory to save split PDF files in.
+     */
     public void setTargetDirectory(File aTargetDirectory)
     {
         mTargetDirectory = aTargetDirectory;
     }
 
 
+    /**
+     * The name pattern is the pattern to be used to generate file name when
+     * creating split PDF files.
+     * 
+     * @return the currently configured name pattern or null if no name pattern
+     *         is configured.
+     */
     public String getNamePattern()
     {
         return mNamePattern;
     }
 
 
+    /**
+     * 
+     * @param aNamePattern
+     *            the new configured name pattern to be used to generate file
+     *            names for split PDF files.
+     */
     public void setNamePattern(String aNamePattern)
     {
         mNamePattern = aNamePattern;
