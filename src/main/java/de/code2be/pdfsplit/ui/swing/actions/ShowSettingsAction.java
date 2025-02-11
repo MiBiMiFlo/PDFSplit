@@ -1,7 +1,7 @@
 package de.code2be.pdfsplit.ui.swing.actions;
 
 import java.awt.event.ActionEvent;
-import java.util.logging.Level;
+import java.lang.System.Logger.Level;
 
 import javax.swing.JOptionPane;
 
@@ -44,7 +44,7 @@ public class ShowSettingsAction extends BasicAction
             }
             catch (Exception ex)
             {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.ERROR, ex.getMessage(), ex);
                 mFrame.showError(ex.getMessage(),
                         "ERROR - Can not write config", ex);
             }

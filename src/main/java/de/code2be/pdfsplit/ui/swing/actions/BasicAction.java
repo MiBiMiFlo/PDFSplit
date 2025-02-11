@@ -27,7 +27,7 @@ public abstract class BasicAction extends AbstractAction
 
     public static boolean mShowAcceleratorInToolTip = true;
 
-    private static final Logger LOGGER = System
+    protected static final Logger LOGGER = System
             .getLogger(BasicAction.class.getName());
 
     /**
