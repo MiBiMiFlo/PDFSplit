@@ -1,5 +1,6 @@
 package de.code2be.pdfsplit;
 
+import java.io.File;
 import java.util.EventObject;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -74,8 +75,11 @@ public class SplitStatusEvent extends EventObject
      */
     private final PDDocument mDocument;
 
+    private final File mFile;
+
     public SplitStatusEvent(SmartSplitter aSplitter, int aID, int aPageCount,
-            int aCurrentPage, int aDocumentCount, PDDocument aDocument)
+            int aCurrentPage, int aDocumentCount, PDDocument aDocument,
+            File aFile)
     {
         super(aSplitter);
         mID = aID;
@@ -83,6 +87,7 @@ public class SplitStatusEvent extends EventObject
         mCurrentPage = aCurrentPage;
         mDocumentCount = aDocumentCount;
         mDocument = aDocument;
+        mFile = aFile;
     }
 
 
@@ -151,6 +156,12 @@ public class SplitStatusEvent extends EventObject
     public int getDocumentCount()
     {
         return mDocumentCount;
+    }
+
+
+    public File getFile()
+    {
+        return mFile;
     }
 
 }

@@ -120,7 +120,7 @@ public class PDFPagePanel extends JComponent
             {
                 float dpi = (float) (72.0f / scale);
                 img = new PDFRenderer(pdfDoc).renderImageWithDPI(mPageIndex,
-                        dpi, ImageType.GRAY);
+                        dpi, ImageType.RGB);
             }
         }
         catch (Exception ex)
