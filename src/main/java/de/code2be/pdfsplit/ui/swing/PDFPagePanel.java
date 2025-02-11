@@ -13,8 +13,10 @@ import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 
 /**
@@ -113,10 +115,13 @@ public class PDFPagePanel extends JComponent
 
             double scale = Math.max(scaleH, scaleW);
 
-            PDFRenderer rdr = new PDFRenderer(mDocPanel.getDocument());
-
-            img = rdr.renderImageWithDPI(mPageIndex, (float) (72.0d / scale));
-
+            PDDocument pdfDoc = mDocPanel.getDocument();
+            synchronized (pdfDoc)
+            {
+                float dpi = (float) (72.0f / scale);
+                img = new PDFRenderer(pdfDoc).renderImageWithDPI(mPageIndex,
+                        dpi, ImageType.GRAY);
+            }
         }
         catch (Exception ex)
         {
@@ -125,8 +130,12 @@ public class PDFPagePanel extends JComponent
             img = new BufferedImage(prefSize.width, prefSize.height,
                     BufferedImage.TYPE_BYTE_GRAY);
             Graphics g = img.getGraphics();
+            g.setColor(Color.lightGray);
+            g.fillRect(0, 0, prefSize.width, prefSize.height);
+            g.setColor(Color.darkGray);
+            g.setFont(g.getFont().deriveFont((float) (prefSize.height * 1.0f)));
+            g.drawString("?", 0, prefSize.height);
             g.drawLine(0, 0, prefSize.width, prefSize.height);
-
         }
         finally
         {

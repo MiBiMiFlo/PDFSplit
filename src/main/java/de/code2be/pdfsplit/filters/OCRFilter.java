@@ -156,11 +156,14 @@ public class OCRFilter extends AbstractDocumentFilter
     {
         try
         {
-            PDFTextStripper ts = new PDFTextStripper();
-            ts.setStartPage(aPageIndex + 1);
-            ts.setEndPage(aPageIndex + 1);
-            String text = ts.getText(aDocument);
-            return text.trim().length() > 0;
+            synchronized (aDocument)
+            {
+                PDFTextStripper ts = new PDFTextStripper();
+                ts.setStartPage(aPageIndex + 1);
+                ts.setEndPage(aPageIndex + 1);
+                String text = ts.getText(aDocument);
+                return text.trim().length() > 0;
+            }
         }
         catch (IOException ex)
         {
@@ -280,8 +283,6 @@ public class OCRFilter extends AbstractDocumentFilter
      */
     protected void process(ItemProvider<PageMetaData> aItems)
     {
-        PDFRenderer renderer = null;
-        PDDocument lastDoc = null;
         try (TesseractC trOCR = mTF.createCloseableInstance())
         {
             PageMetaData pmd;
@@ -296,21 +297,16 @@ public class OCRFilter extends AbstractDocumentFilter
                     continue;
                 }
 
-                if (lastDoc != pmd.getDocument())
-                {
-                    renderer = null;
-                }
-
                 try
                 {
-                    if (renderer == null)
-                    {
-                        renderer = new PDFRenderer(pmd.getDocument());
-                    }
-
                     long start = System.currentTimeMillis();
-                    BufferedImage img = renderer.renderImage(pmd.getPageIndex(),
-                            mScale, ImageType.BINARY);
+                    PDDocument doc = pmd.getDocument();
+                    BufferedImage img;
+                    synchronized (doc)
+                    {
+                        img = new PDFRenderer(doc).renderImage(
+                                pmd.getPageIndex(), mScale, ImageType.BINARY);
+                    }
 
                     LOGGER.log(Level.FINE, "Rendering took: {0}ms",
                             (System.currentTimeMillis() - start));
