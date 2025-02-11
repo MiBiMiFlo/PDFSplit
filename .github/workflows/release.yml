@@ -35,11 +35,11 @@ jobs:
         draft: false
         prerelease: false
     - name: Get Name of Artifact
-        run: |
-            ARTIFACT_PATHNAME=$(ls target/pdfsplit*.zip | head -n 1)
-            ARTIFACT_NAME=$(basename $ARTIFACT_PATHNAME)
-            echo ::set-env name=ARTIFACT_NAME::${ARTIFACT_NAME}
-            echo ::set-env name=ARTIFACT_PATHNAME::${ARTIFACT_PATHNAME}
+      run: |
+        ARTIFACT_PATHNAME=$(ls target/pdfsplit*.zip | head -n 1)
+        ARTIFACT_NAME=$(basename $ARTIFACT_PATHNAME)
+        echo ::set-env name=ARTIFACT_NAME::${ARTIFACT_NAME}
+        echo ::set-env name=ARTIFACT_PATHNAME::${ARTIFACT_PATHNAME}
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
       id: upload-release-asset 
