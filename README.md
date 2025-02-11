@@ -7,6 +7,9 @@ PDFSplit now identifies the separator page and automatically splits on this page
 PDFSplit allows to use a QR code on the separator page as well as special Text that either is identified by it's internal OCR (using Tesseract) or
 by the OCR engine of the scanner (extracting the text with pdfbox).
 
+Optionally PDFSplit can use tesseract to do OCR. FOr this to work a folder tessdata must be created and tesseract training data must be stored there.
+This data can be retrieved from https://github.com/tesseract-ocr/tessdata
+
 # Swing User Interface
 
 PDFSplit has a small (but useful) SWING based user interface. This interface allows to open a PDF document and shows the split output documents for preview.
@@ -25,7 +28,5 @@ java -jar pdfsplit.jar [input_file.pdf]
 This will split the given PDF file and store single pdf files based on config location.
 
 # Planned features
-- SWING UI should get a nice looking Settings Dialog (incl. update of pdfsplit.cfg file)
 - Possibly update to be more modular (e.g. support different OCR or pdf libraries)
-- Allow output name masks and programatically defined output names)
-- Allow to do OCR on split and save with OCR result text (make searchable PDFs while splitting)
+- Allow output name masks and programmatically defined output names)
