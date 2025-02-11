@@ -4,9 +4,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.swing.UIManager;
 
@@ -19,7 +19,7 @@ import de.code2be.pdfsplit.ui.swing.PDFSplitFrame;
 public class PDFSplitter
 {
 
-    private static final Logger LOGGER = Logger
+    private static final Logger LOGGER = System
             .getLogger(PDFSplitter.class.getName());
 
     public static final String DEFAULT_SEP = "$PWKM%U?5X4$";
@@ -64,7 +64,7 @@ public class PDFSplitter
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
         }
     }
 

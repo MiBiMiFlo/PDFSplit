@@ -32,11 +32,11 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.File;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -71,6 +71,7 @@ import de.code2be.pdfsplit.filters.OCRFilter;
 import de.code2be.pdfsplit.split.QRCodeIdentifier;
 import de.code2be.pdfsplit.split.TextSplitIdentifier;
 import de.code2be.pdfsplit.split.TextSplitIdentifierOCR;
+import de.code2be.pdfsplit.ui.swing.actions.CloseAll;
 import de.code2be.pdfsplit.ui.swing.actions.DeleteDocumentAction;
 import de.code2be.pdfsplit.ui.swing.actions.OpenFileAction;
 import de.code2be.pdfsplit.ui.swing.actions.RenameAction;
@@ -94,7 +95,7 @@ public class PDFSplitFrame extends JFrame
 
     private static final long serialVersionUID = 5992521065908641880L;
 
-    private static final Logger LOGGER = Logger
+    private static final Logger LOGGER = System
             .getLogger(PDFSplitFrame.class.getName());
 
     private File mPDFFile;
@@ -130,7 +131,7 @@ public class PDFSplitFrame extends JFrame
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
         }
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         addWindowListener(mWindowCloseListener);
@@ -237,6 +238,7 @@ public class PDFSplitFrame extends JFrame
         registerAction(new SaveAllAction(this));
         registerAction(new RenameAction(this));
         registerAction(new DeleteDocumentAction(this));
+        registerAction(new CloseAll(this));
         registerAction(new ShowSettingsAction(this));
         registerAction(new RenameAction(this));
         registerAction(new ZoomInAction(this));
@@ -256,7 +258,7 @@ public class PDFSplitFrame extends JFrame
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
         }
         return 0;
     }
@@ -276,6 +278,7 @@ public class PDFSplitFrame extends JFrame
         fileMenu.setMnemonic(getKeyCodeForMnemonic(
                 I18n.getMessage(PDFSplitFrame.class, "MENU.FILE.mnemonic")));
         fileMenu.add(getAction(OpenFileAction.ACTION_NAME));
+        fileMenu.add(getAction(CloseAll.ACTION_NAME));
         fileMenu.addSeparator();
         fileMenu.add(getAction(SaveAction.ACTION_NAME));
         fileMenu.add(getAction(SaveAsAction.ACTION_NAME));
@@ -323,6 +326,8 @@ public class PDFSplitFrame extends JFrame
         toolBar.add(getAction(RenameAction.ACTION_NAME));
         toolBar.addSeparator();
         toolBar.add(getAction(DeleteDocumentAction.ACTION_NAME));
+        toolBar.add(getAction(CloseAll.ACTION_NAME));
+
         toolBar.addSeparator();
         toolBar.add(getAction(ZoomInAction.ACTION_NAME));
         toolBar.add(getAction(ZoomOutAction.ACTION_NAME));
@@ -346,7 +351,7 @@ public class PDFSplitFrame extends JFrame
             }
             catch (Exception ex)
             {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.ERROR, ex.getMessage(), ex);
                 setStatusText(I18n.getMessage("main.error.loadConfig",
                         ex.getLocalizedMessage()));
             }
@@ -416,6 +421,20 @@ public class PDFSplitFrame extends JFrame
         {
             docPane.save();
         }
+    }
+
+
+    public int getUnsavedCount()
+    {
+        int unsaved = 0;
+        for (PDFDocumentPanel docPnl : getDocumentPanels())
+        {
+            if (docPnl.isUnsaved())
+            {
+                unsaved++;
+            }
+        }
+        return unsaved;
     }
 
 
@@ -585,7 +604,7 @@ public class PDFSplitFrame extends JFrame
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
         }
 
         return res;
@@ -614,7 +633,7 @@ public class PDFSplitFrame extends JFrame
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
         }
 
         return tesseract;
@@ -661,7 +680,7 @@ public class PDFSplitFrame extends JFrame
             }
             catch (Exception ex)
             {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.ERROR, ex.getMessage(), ex);
                 showError(ex.getMessage(), "ERROR - Closing old PDF File", ex);
             }
             finally
@@ -738,7 +757,7 @@ public class PDFSplitFrame extends JFrame
                 }
                 catch (Exception ex)
                 {
-                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                    LOGGER.log(Level.ERROR, ex.getMessage(), ex);
                 }
             }
             else
@@ -799,7 +818,7 @@ public class PDFSplitFrame extends JFrame
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             showError(ex.getMessage(), "ERROR - Open PDF File", ex);
         }
         finally
@@ -865,6 +884,15 @@ public class PDFSplitFrame extends JFrame
     }
 
 
+    public void closeAllTabs()
+    {
+        while (mDocsPane.getTabCount() > 0)
+        {
+            mDocsPane.remove(0);
+        }
+    }
+
+
     public void zoomOnMouseWheel(MouseWheelEvent aEvent)
     {
         if (aEvent.isControlDown())
@@ -918,14 +946,7 @@ public class PDFSplitFrame extends JFrame
         @Override
         public void windowClosing(WindowEvent e)
         {
-            int unsaved = 0;
-            for (PDFDocumentPanel docPnl : getDocumentPanels())
-            {
-                if (docPnl.isUnsaved())
-                {
-                    unsaved++;
-                }
-            }
+            int unsaved = getUnsavedCount();
             if (unsaved > 0)
             {
                 String msg = I18n.getMessage(PDFSplitFrame.class,
@@ -982,7 +1003,7 @@ public class PDFSplitFrame extends JFrame
             }
             catch (Exception ex)
             {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             }
         }
     };

@@ -2,12 +2,12 @@ package de.code2be.pdfsplit;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.MemoryUsageSetting;
@@ -27,7 +27,7 @@ import de.code2be.pdfsplit.split.ISplitPageIdentifier;
 public class SmartSplitter
 {
 
-    private static final Logger LOGGER = Logger
+    private static final Logger LOGGER = System
             .getLogger(SmartSplitter.class.getName());
 
     /**
@@ -79,28 +79,59 @@ public class SmartSplitter
      */
     private final List<ISplitPageIdentifier> mSplitPageIdentifiers = new ArrayList<>();
 
+    /**
+     * The target directory to save split PDF files in.
+     */
     private File mTargetDirectory;
 
+    /**
+     * The target name pattern to be used as file name when creating split PDF
+     * files.
+     */
     private String mNamePattern;
 
+    /**
+     * The target directory is the directory to save split PDF files in.
+     * 
+     * @return the current configured target directory. This might be null if no
+     *         target directory is configured.
+     */
     public File getTargetDirectory()
     {
         return mTargetDirectory;
     }
 
 
+    /**
+     * 
+     * @param aTargetDirectory
+     *            the new target directory to save split PDF files in.
+     */
     public void setTargetDirectory(File aTargetDirectory)
     {
         mTargetDirectory = aTargetDirectory;
     }
 
 
+    /**
+     * The name pattern is the pattern to be used to generate file name when
+     * creating split PDF files.
+     * 
+     * @return the currently configured name pattern or null if no name pattern
+     *         is configured.
+     */
     public String getNamePattern()
     {
         return mNamePattern;
     }
 
 
+    /**
+     * 
+     * @param aNamePattern
+     *            the new configured name pattern to be used to generate file
+     *            names for split PDF files.
+     */
     public void setNamePattern(String aNamePattern)
     {
         mNamePattern = aNamePattern;
@@ -240,7 +271,7 @@ public class SmartSplitter
             }
             catch (Exception ex)
             {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             }
         }
     }
@@ -336,24 +367,40 @@ public class SmartSplitter
     }
 
 
+    /**
+     * Create a file to write the next split PDF file to.
+     * 
+     * @return the file to be used to write the next split PDF file to.
+     * @throws IOException
+     *             in case no target file can be created.
+     */
     protected File getNextDocumentFile() throws IOException
     {
         File f = null;
         if (mNamePattern != null && mTargetDirectory != null)
         {
-            for (int i = 0; i < 1000; i++)
+            // name pattern and target dir are set
+            // --> try to create a new file there
+            for (int i = 0; i < 5000; i++)
             {
                 String name = MessageFormat.format(mNamePattern, i);
                 f = new File(mTargetDirectory, name);
                 if (f.createNewFile())
                 {
+                    // we have created a new file
                     return f;
+                }
+                if (!f.exists())
+                {
+                    // seems we don't have write permission --> no need to
+                    // follow up with the loop
                 }
             }
         }
 
         if (f == null)
         {
+            // as a fall back we create a new temporary file
             f = File.createTempFile("pdfsplit_", ".pdf", mTargetDirectory);
         }
 
@@ -361,11 +408,22 @@ public class SmartSplitter
     }
 
 
+    /**
+     * Perform the tasks to be required when a split page is found and an
+     * unsaved document has at least 1 page.
+     * 
+     * @param aTargetDoc
+     *            the document to be saved.
+     * @throws IOException
+     *             in case the document can not be saved.
+     */
     protected void performDocumentFinished(PDDocument aTargetDoc)
         throws IOException
     {
         File docFile = getNextDocumentFile();
 
+        LOGGER.log(Level.DEBUG, "Will output split PDF with {0} pages to {0}.",
+                aTargetDoc.getNumberOfPages(), docFile);
         aTargetDoc.save(docFile);
         PDDocument savedDoc = Loader.loadPDF(docFile);
         mTargetDocs.add(savedDoc);
@@ -406,6 +464,8 @@ public class SmartSplitter
 
             if (isSplitPage(page, mCurrentPage))
             {
+                LOGGER.log(Level.DEBUG, "Found page {0} to be a split page.",
+                        mCurrentPage);
                 // current page contains the split text --> end of previous
                 // document (this page is dropped)
                 if (targetDoc != null)
@@ -466,7 +526,7 @@ public class SmartSplitter
             }
             catch (Exception ex)
             {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             }
         }
 

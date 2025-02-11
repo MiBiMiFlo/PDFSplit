@@ -6,8 +6,8 @@ import java.awt.Graphics;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
@@ -30,7 +30,7 @@ public class PDFPagePanel extends JComponent
 
     private static final long serialVersionUID = -8626887910399256241L;
 
-    private static final Logger LOGGER = Logger
+    private static final Logger LOGGER = System
             .getLogger(PDFPagePanel.class.getName());
 
     private final PDPage mPage;
@@ -125,7 +125,7 @@ public class PDFPagePanel extends JComponent
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
 
             img = new BufferedImage(prefSize.width, prefSize.height,
                     BufferedImage.TYPE_BYTE_GRAY);

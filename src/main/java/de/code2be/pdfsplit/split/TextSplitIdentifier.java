@@ -1,8 +1,8 @@
 package de.code2be.pdfsplit.split;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -20,7 +20,7 @@ public class TextSplitIdentifier implements ISplitPageIdentifier
 
     private static final long serialVersionUID = 4566878022203192763L;
 
-    private static final Logger LOGGER = Logger
+    private static final Logger LOGGER = System
             .getLogger(TextSplitIdentifier.class.getName());
 
     /**
@@ -118,7 +118,7 @@ public class TextSplitIdentifier implements ISplitPageIdentifier
         }
         catch (IOException ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             return "";
         }
     }
@@ -145,9 +145,9 @@ public class TextSplitIdentifier implements ISplitPageIdentifier
             }
         }
         // not enough found
-        if (found > 0 && LOGGER.isLoggable(Level.FINE))
+        if (found > 0 && LOGGER.isLoggable(Level.DEBUG))
         {
-            LOGGER.log(Level.FINE,
+            LOGGER.log(Level.DEBUG,
                     "Found {0} of {1} split texts on page {3}. Required would be {4}",
                     new Object[]
                     {

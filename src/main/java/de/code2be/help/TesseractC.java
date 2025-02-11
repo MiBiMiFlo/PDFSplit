@@ -1,8 +1,8 @@
 package de.code2be.help;
 
 import java.io.Closeable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
 import net.sourceforge.tess4j.Tesseract;
 
@@ -18,7 +18,7 @@ import net.sourceforge.tess4j.Tesseract;
 public class TesseractC extends Tesseract implements Closeable
 {
 
-    private static final Logger LOGGER = Logger
+    private static final Logger LOGGER = System
             .getLogger(TesseractC.class.getName());
 
     /**
@@ -45,7 +45,7 @@ public class TesseractC extends Tesseract implements Closeable
         else
         {
             // already initialized --> do nothing, but log
-            LOGGER.log(Level.FINE, "Already initialized, ignoring!");
+            LOGGER.log(Level.DEBUG, "Already initialized, ignoring!");
         }
     }
 
@@ -62,7 +62,7 @@ public class TesseractC extends Tesseract implements Closeable
         else
         {
             // variables already set --> do nothing bug log
-            LOGGER.log(Level.FINE, "Variables already set, ignoring!");
+            LOGGER.log(Level.DEBUG, "Variables already set, ignoring!");
         }
     }
 
@@ -71,7 +71,7 @@ public class TesseractC extends Tesseract implements Closeable
     protected void dispose()
     {
         // we fully ignore calls to dispose
-        LOGGER.log(Level.FINE, "Ignoring call to dispose.");
+        LOGGER.log(Level.DEBUG, "Ignoring call to dispose.");
     }
 
 

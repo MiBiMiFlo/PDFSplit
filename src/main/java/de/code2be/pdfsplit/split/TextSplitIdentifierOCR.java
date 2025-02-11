@@ -2,8 +2,8 @@ package de.code2be.pdfsplit.split;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -26,7 +26,7 @@ public class TextSplitIdentifierOCR extends TextSplitIdentifier
 
     private static final long serialVersionUID = -2268075370178633007L;
 
-    private static final Logger LOGGER = Logger
+    private static final Logger LOGGER = System
             .getLogger(TextSplitIdentifierOCR.class.getName());
 
     /**
@@ -160,7 +160,7 @@ public class TextSplitIdentifierOCR extends TextSplitIdentifier
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
         }
         return text;
     }
