@@ -1,12 +1,15 @@
 package de.code2be.pdfsplit;
 
+import java.io.File;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -33,12 +36,6 @@ public class SmartSplitter
     private PDDocument mSourceDoc;
 
     /**
-     * The current target document. This is the document new pages are imported
-     * to.
-     */
-    private PDDocument mTargetDoc;
-
-    /**
      * The index of the first page in {@link #mSourceDoc} to process. The first
      * possible page is index 0.
      */
@@ -62,8 +59,7 @@ public class SmartSplitter
     private int mCurrentPage;
 
     /**
-     * The memory usage settings, that are to be applied for new documents
-     * {@link #mTargetDoc}.
+     * The memory usage settings, that are to be applied for new documents.
      */
     private MemoryUsageSetting mMemoryUsageSetting = null;
 
@@ -82,6 +78,34 @@ public class SmartSplitter
      * The list of registered {@link ISplitPageIdentifier}'s.
      */
     private final List<ISplitPageIdentifier> mSplitPageIdentifiers = new ArrayList<>();
+
+    private File mTargetDirectory;
+
+    private String mNamePattern;
+
+    public File getTargetDirectory()
+    {
+        return mTargetDirectory;
+    }
+
+
+    public void setTargetDirectory(File aTargetDirectory)
+    {
+        mTargetDirectory = aTargetDirectory;
+    }
+
+
+    public String getNamePattern()
+    {
+        return mNamePattern;
+    }
+
+
+    public void setNamePattern(String aNamePattern)
+    {
+        mNamePattern = aNamePattern;
+    }
+
 
     /**
      * 
@@ -192,6 +216,12 @@ public class SmartSplitter
      */
     protected void sendStatusUpdate(int aID, PDDocument aDocument)
     {
+        sendStatusUpdate(aID, aDocument, null);
+    }
+
+
+    protected void sendStatusUpdate(int aID, PDDocument aDocument, File aFile)
+    {
         if (mListeners.size() == 0)
         {
             return;
@@ -200,7 +230,7 @@ public class SmartSplitter
         int docCount = mTargetDocs != null ? mTargetDocs.size() : 0;
         final SplitStatusEvent evt = new SplitStatusEvent(this, aID,
                 mSourceDoc.getNumberOfPages(), mCurrentPage, docCount,
-                aDocument);
+                aDocument, aFile);
 
         for (ISplitStatusListener l : mListeners)
         {
@@ -261,7 +291,6 @@ public class SmartSplitter
     public List<PDDocument> split(PDDocument aDocument) throws IOException
     {
         mCurrentPage = 0;
-        mTargetDoc = null;
         mTargetDocs = new ArrayList<PDDocument>();
         mSourceDoc = aDocument;
         mAbort = false;
@@ -307,6 +336,45 @@ public class SmartSplitter
     }
 
 
+    protected File getNextDocumentFile() throws IOException
+    {
+        File f = null;
+        if (mNamePattern != null && mTargetDirectory != null)
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                String name = MessageFormat.format(mNamePattern, i);
+                f = new File(mTargetDirectory, name);
+                if (f.createNewFile())
+                {
+                    return f;
+                }
+            }
+        }
+
+        if (f == null)
+        {
+            f = File.createTempFile("pdfsplit_", ".pdf", mTargetDirectory);
+        }
+
+        return f;
+    }
+
+
+    protected void performDocumentFinished(PDDocument aTargetDoc)
+        throws IOException
+    {
+        File docFile = getNextDocumentFile();
+
+        aTargetDoc.save(docFile);
+        PDDocument savedDoc = Loader.loadPDF(docFile);
+        mTargetDocs.add(savedDoc);
+
+        sendStatusUpdate(SplitStatusEvent.EVENT_DOCUMENT_FINISHED, savedDoc,
+                docFile);
+    }
+
+
     /**
      * Process pages while splitting.
      * 
@@ -321,6 +389,7 @@ public class SmartSplitter
         int endPage = Math.min(mEndPage, mSourceDoc.getNumberOfPages());
 
         mCurrentPage = -1;
+        PDDocument targetDoc = null;
         for (PDPage page : getSourceDocument().getPages())
         {
             mCurrentPage++;
@@ -339,39 +408,37 @@ public class SmartSplitter
             {
                 // current page contains the split text --> end of previous
                 // document (this page is dropped)
-                if (mTargetDoc != null)
+                if (targetDoc != null)
                 {
-                    sendStatusUpdate(SplitStatusEvent.EVENT_DOCUMENT_FINISHED,
-                            mTargetDoc);
+                    performDocumentFinished(targetDoc);
+                    targetDoc = null;
                 }
-                mTargetDoc = null;
             }
             else
             {
                 // not a split page --> include into target document
-                if (mTargetDoc == null)
+                if (targetDoc == null)
                 {
                     // no active target document --> create a new target
                     // document
-                    mTargetDocs.add(mTargetDoc = PDFHelper.createNewDocument(
-                            getMemoryUsageSetting(), getSourceDocument()));
+                    targetDoc = PDFHelper.createNewDocument(
+                            getMemoryUsageSetting(), getSourceDocument());
                     sendStatusUpdate(SplitStatusEvent.EVENT_NEW_DOCUMENT,
-                            mTargetDoc);
+                            targetDoc);
                 }
 
                 // import the page into the new target document
-                PDFHelper.importPage(getTargetDocument(), page);
+                PDFHelper.importPage(targetDoc, page);
                 sendStatusUpdate(SplitStatusEvent.EVENT_NEXT_PAGE, mSourceDoc);
             }
         }
-        if (mTargetDoc != null)
+        if (targetDoc != null)
         {
-            sendStatusUpdate(SplitStatusEvent.EVENT_DOCUMENT_FINISHED,
-                    mTargetDoc);
+            performDocumentFinished(targetDoc);
+            targetDoc = null;
         }
 
         sendStatusUpdate(SplitStatusEvent.EVENT_SPLITTING_FINISHED, mSourceDoc);
-        mTargetDoc = null;
     }
 
 
@@ -416,17 +483,4 @@ public class SmartSplitter
     {
         return mSourceDoc;
     }
-
-
-    /**
-     * The current destination document. This is the document that get's the
-     * next page assigned.
-     * 
-     * @return the current target document.
-     */
-    protected final PDDocument getTargetDocument()
-    {
-        return mTargetDoc;
-    }
-
 }

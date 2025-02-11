@@ -226,14 +226,23 @@ public class EmptyPageChecker
      */
     public boolean isPageEmpty(PDPage aPage, int aPageIndex)
     {
+        if (mDocument == null)
+        {
+            LOGGER.log(Level.SEVERE, "Called with null document!");
+            return false;
+        }
+
         try
         {
-            if (mRenderer == null)
+            BufferedImage img;
+            synchronized (mDocument)
             {
-                mRenderer = new PDFRenderer(mDocument);
+                if (mRenderer == null)
+                {
+                    mRenderer = new PDFRenderer(mDocument);
+                }
+                img = mRenderer.renderImage(aPageIndex);
             }
-
-            BufferedImage img = mRenderer.renderImage(aPageIndex);
 
             int pW = img.getWidth();
             int pH = img.getHeight();

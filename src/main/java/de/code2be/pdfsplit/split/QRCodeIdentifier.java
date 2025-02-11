@@ -61,10 +61,12 @@ public class QRCodeIdentifier implements ISplitPageIdentifier
             int aPageIndex)
         throws Exception
     {
-        PDFRenderer renderer = new PDFRenderer(aDocument);
-        BufferedImage img = renderer.renderImage(aPageIndex, 1.0f,
-                ImageType.BINARY);
-
+        BufferedImage img;
+        synchronized (aDocument)
+        {
+            img = new PDFRenderer(aDocument).renderImageWithDPI(aPageIndex,
+                    72f, ImageType.GRAY);
+        }
         LuminanceSource source = new BufferedImageLuminanceSource(img);
         BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
 

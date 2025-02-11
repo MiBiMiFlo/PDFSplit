@@ -113,8 +113,6 @@ public class PDFSplitFrame extends JFrame
 
     private Dimension mPreviewSize;
 
-    private int mTabIdx = 0;
-
     private ImageIcon mPdfFileIcon;
 
     /**
@@ -703,6 +701,10 @@ public class PDFSplitFrame extends JFrame
             SmartSplitter smsp = new SmartSplitter();
             smsp.addStatusListener(mSplitListener);
 
+            String namePattern = mPDFFile.getName().replace(".pdf", "_{0}.pdf");
+            smsp.setNamePattern(namePattern);
+            smsp.setTargetDirectory(mPDFFile.getParentFile());
+
             boolean doQrSep = getConfig().getConfigValB(PROP_SEPARATOR_USE_QR,
                     true);
             boolean doTextSep = getConfig()
@@ -784,6 +786,7 @@ public class PDFSplitFrame extends JFrame
                 setStatusText(
                         "Will split file " + mPDFFile.getAbsolutePath() + ".");
                 smsp.split(mPDFDocument);
+                setStatusText("Ready");
             }
             finally
             {
@@ -813,13 +816,9 @@ public class PDFSplitFrame extends JFrame
      *            the document that should be displayed in a new PDF document
      *            panel.
      */
-    protected void addTabForDoc(PDDocument aDocument)
+    protected void addTabForDoc(PDDocument aDocument, File aFile)
     {
-        mTabIdx++;
-        String fileName = mPDFFile.getName().replace(".pdf",
-                "_" + mTabIdx + ".pdf");
-        PDFDocumentPanel pnl = new PDFDocumentPanel(this, aDocument,
-                new File(mPDFFile.getParent(), fileName));
+        PDFDocumentPanel pnl = new PDFDocumentPanel(this, aDocument, aFile);
 
         if (getConfig().getConfigValB(PROP_FILTER_DO_EMPTY_PAGE, true))
         {
@@ -872,8 +871,7 @@ public class PDFSplitFrame extends JFrame
         {
             if (aEvent.getScrollType() == MouseWheelEvent.WHEEL_UNIT_SCROLL)
             {
-                float factor = 1.0f
-                        + ((aEvent.getScrollAmount()) * 0.1f);
+                float factor = 1.0f + ((aEvent.getScrollAmount()) * 0.1f);
 
                 Dimension oldSize = getPreviewSize();
                 Dimension newSize = null;
@@ -909,8 +907,7 @@ public class PDFSplitFrame extends JFrame
             updateFileInfoLabel(aEvent);
             if (aEvent.getID() == SplitStatusEvent.EVENT_DOCUMENT_FINISHED)
             {
-                final PDDocument doc = aEvent.getDocument();
-                addTabForDoc(doc);
+                addTabForDoc(aEvent.getDocument(), aEvent.getFile());
             }
         }
     };

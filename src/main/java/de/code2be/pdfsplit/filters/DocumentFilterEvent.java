@@ -50,7 +50,7 @@ public class DocumentFilterEvent extends EventObject
     /**
      * The document, that is filtered while the event occurred.
      */
-    private final PDDocument mDocuemnt;
+    private final PDDocument mDocument;
 
     /**
      * The page that is processed while the event occurred.
@@ -88,7 +88,7 @@ public class DocumentFilterEvent extends EventObject
     {
         super(aSource);
         mID = aId;
-        mDocuemnt = aDocuemnt;
+        mDocument = aDocuemnt;
         mPage = aPage;
         mPageCount = aPageCount;
         mPageIndex = aPageIndex;
@@ -116,9 +116,9 @@ public class DocumentFilterEvent extends EventObject
      * 
      * @return the (input) document that is currently processed.
      */
-    public PDDocument getDocuemnt()
+    public PDDocument getDocument()
     {
-        return mDocuemnt;
+        return mDocument;
     }
 
 

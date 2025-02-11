@@ -137,11 +137,12 @@ public class TextSplitIdentifierOCR extends TextSplitIdentifier
                 mTesseract.setDatapath(dataPath.getAbsolutePath());
                 // mTesseract.setOcrEngineMode(TessOcrEngineMode.OEM_TESSERACT_ONLY);
             }
-
-            PDFRenderer renderer = new PDFRenderer(aDocument);
-
-            BufferedImage img = renderer.renderImage(aPageIndex, mScale,
-                    ImageType.BINARY);
+            BufferedImage img;
+            synchronized (aDocument)
+            {
+                img = new PDFRenderer(aDocument).renderImage(aPageIndex, mScale,
+                        ImageType.BINARY);
+            }
 
             String ocrText = mTesseract.doOCR(img);
             if (ocrText != null)
