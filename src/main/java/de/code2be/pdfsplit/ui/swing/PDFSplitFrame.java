@@ -32,11 +32,11 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.File;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -94,7 +94,7 @@ public class PDFSplitFrame extends JFrame
 
     private static final long serialVersionUID = 5992521065908641880L;
 
-    private static final Logger LOGGER = Logger
+    private static final Logger LOGGER = System
             .getLogger(PDFSplitFrame.class.getName());
 
     private File mPDFFile;
@@ -130,7 +130,7 @@ public class PDFSplitFrame extends JFrame
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
         }
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         addWindowListener(mWindowCloseListener);
@@ -256,7 +256,7 @@ public class PDFSplitFrame extends JFrame
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
         }
         return 0;
     }
@@ -346,7 +346,7 @@ public class PDFSplitFrame extends JFrame
             }
             catch (Exception ex)
             {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.ERROR, ex.getMessage(), ex);
                 setStatusText(I18n.getMessage("main.error.loadConfig",
                         ex.getLocalizedMessage()));
             }
@@ -585,7 +585,7 @@ public class PDFSplitFrame extends JFrame
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
         }
 
         return res;
@@ -614,7 +614,7 @@ public class PDFSplitFrame extends JFrame
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
         }
 
         return tesseract;
@@ -661,7 +661,7 @@ public class PDFSplitFrame extends JFrame
             }
             catch (Exception ex)
             {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.ERROR, ex.getMessage(), ex);
                 showError(ex.getMessage(), "ERROR - Closing old PDF File", ex);
             }
             finally
@@ -738,7 +738,7 @@ public class PDFSplitFrame extends JFrame
                 }
                 catch (Exception ex)
                 {
-                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                    LOGGER.log(Level.ERROR, ex.getMessage(), ex);
                 }
             }
             else
@@ -799,7 +799,7 @@ public class PDFSplitFrame extends JFrame
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             showError(ex.getMessage(), "ERROR - Open PDF File", ex);
         }
         finally
@@ -982,7 +982,7 @@ public class PDFSplitFrame extends JFrame
             }
             catch (Exception ex)
             {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             }
         }
     };

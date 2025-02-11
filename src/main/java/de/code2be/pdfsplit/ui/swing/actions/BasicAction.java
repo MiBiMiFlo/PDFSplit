@@ -2,9 +2,9 @@ package de.code2be.pdfsplit.ui.swing.actions;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.URL;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.swing.AbstractAction;
 import javax.swing.Icon;
@@ -25,10 +25,10 @@ public abstract class BasicAction extends AbstractAction
 
     private static final long serialVersionUID = 6516422925676999990L;
 
-    protected static final Logger LOGGER = Logger
-            .getLogger(BasicAction.class.getName());
-
     public static boolean mShowAcceleratorInToolTip = true;
+
+    private static final Logger LOGGER = System
+            .getLogger(BasicAction.class.getName());
 
     /**
      * Looks for a action resource bundle name for the given class.
@@ -173,7 +173,7 @@ public abstract class BasicAction extends AbstractAction
             }
             catch (Exception ex)
             {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             }
 
             try
@@ -187,7 +187,7 @@ public abstract class BasicAction extends AbstractAction
             }
             catch (Exception ex)
             {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             }
 
         }
@@ -416,7 +416,7 @@ public abstract class BasicAction extends AbstractAction
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.FINEST, ex.getMessage(), ex);
+            LOGGER.log(Level.TRACE, ex.getMessage(), ex);
         }
         return null;
     }
@@ -530,7 +530,7 @@ public abstract class BasicAction extends AbstractAction
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
         }
         setInitialized(true);
     }
@@ -643,7 +643,7 @@ public abstract class BasicAction extends AbstractAction
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
         }
         return null;
     }

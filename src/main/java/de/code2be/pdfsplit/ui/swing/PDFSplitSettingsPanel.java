@@ -26,14 +26,14 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.GridLayout;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
@@ -55,7 +55,7 @@ public class PDFSplitSettingsPanel extends JPanel
 
     private static final long serialVersionUID = 7486716557110400546L;
 
-    private static final Logger LOGGER = Logger
+    private static final Logger LOGGER = System
             .getLogger(PDFSplitSettingsPanel.class.getName());
 
     private Map<String, JComponent> mSettingComponents = new HashMap<>();

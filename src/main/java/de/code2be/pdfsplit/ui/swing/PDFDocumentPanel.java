@@ -7,10 +7,10 @@ import java.awt.FlowLayout;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -27,10 +27,10 @@ import de.code2be.pdfsplit.PDFHelper;
 public class PDFDocumentPanel extends JPanel
 {
 
-    private static final Logger LOGGER = Logger
-            .getLogger(PDFDocumentPanel.class.getName());
-
     private static final long serialVersionUID = 5228203932797387514L;
+
+    private static final Logger LOGGER = System
+            .getLogger(PDFDocumentPanel.class.getName());
 
     private final PDFSplitFrame mFrame;
 
@@ -180,7 +180,7 @@ public class PDFDocumentPanel extends JPanel
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             JOptionPane.showMessageDialog(this, ex.getMessage(),
                     "ERROR: Can not save to file", JOptionPane.ERROR_MESSAGE);
         }

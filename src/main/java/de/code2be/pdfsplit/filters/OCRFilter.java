@@ -4,12 +4,11 @@ import java.awt.Color;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -45,7 +44,7 @@ public class OCRFilter extends AbstractDocumentFilter
 
     private static final long serialVersionUID = 7575485665208369756L;
 
-    private static final Logger LOGGER = Logger
+    private static final Logger LOGGER = System
             .getLogger(OCRFilter.class.getName());
 
     /**
@@ -167,7 +166,7 @@ public class OCRFilter extends AbstractDocumentFilter
         }
         catch (IOException ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             return false;
         }
     }
@@ -262,7 +261,7 @@ public class OCRFilter extends AbstractDocumentFilter
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
         }
     }
 
@@ -308,18 +307,18 @@ public class OCRFilter extends AbstractDocumentFilter
                                 pmd.getPageIndex(), mScale, ImageType.BINARY);
                     }
 
-                    LOGGER.log(Level.FINE, "Rendering took: {0}ms",
+                    LOGGER.log(Level.DEBUG, "Rendering took: {0}ms",
                             (System.currentTimeMillis() - start));
                     start = System.currentTimeMillis();
                     List<Word> words = trOCR.getWords(img,
                             TessAPI.TessPageIteratorLevel.RIL_WORD);
-                    LOGGER.log(Level.FINE, "OCR took: {0}ms",
+                    LOGGER.log(Level.DEBUG, "OCR took: {0}ms",
                             (System.currentTimeMillis() - start));
                     pmd.setWords(words);
                 }
                 catch (Exception ex)
                 {
-                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                    LOGGER.log(Level.ERROR, ex.getMessage(), ex);
                 }
                 finally
                 {
@@ -356,14 +355,14 @@ public class OCRFilter extends AbstractDocumentFilter
 
         if (tc <= 1)
         {
-            LOGGER.log(Level.FINE,
+            LOGGER.log(Level.DEBUG,
                     "Will process in actual thread (single threaded).");
             r.run();
         }
         else
         {
             // start a list of threads
-            LOGGER.log(Level.FINE, "Will create {0} threads.", tc);
+            LOGGER.log(Level.DEBUG, "Will create {0} threads.", tc);
             Thread[] threads = new Thread[tc];
             for (int i = 0; i < threads.length; i++)
             {
@@ -382,7 +381,7 @@ public class OCRFilter extends AbstractDocumentFilter
                 }
                 catch (Exception ex)
                 {
-                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                    LOGGER.log(Level.ERROR, ex.getMessage(), ex);
                 }
             }
         }
@@ -395,7 +394,7 @@ public class OCRFilter extends AbstractDocumentFilter
             }
             catch (Exception ex)
             {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             }
         }
 

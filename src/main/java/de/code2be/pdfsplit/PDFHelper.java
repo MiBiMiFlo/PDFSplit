@@ -1,8 +1,9 @@
 package de.code2be.pdfsplit;
 
 import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -28,7 +29,7 @@ import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPa
 public class PDFHelper
 {
 
-    private static final Logger LOGGER = Logger
+    private static final Logger LOGGER = System
             .getLogger(PDFHelper.class.getName());
 
     /**
@@ -93,12 +94,14 @@ public class PDFHelper
                         .getDictionaryObject(key);
                 if (value instanceof COSDictionary)
                 {
-                    LOGGER.warning("Nested entry for key '" + key.getName()
-                            + "' skipped in document information dictionary");
+                    LOGGER.log(Level.WARNING,
+                            "Nested entry for key ''{0}'' skipped in document information dictionary",
+                            key.getName());
                     if (aSource.getDocumentCatalog().getCOSObject() != aSource
                             .getDocumentInformation().getCOSObject())
                         continue;
-                    LOGGER.warning("/Root and /Info share the same dictionary");
+                    LOGGER.log(Level.WARNING,
+                            "/Root and /Info share the same dictionary");
                     continue;
                 }
                 if (COSName.TYPE.equals(key)) continue;
@@ -132,7 +135,7 @@ public class PDFHelper
                 && !aPage.getCOSObject().containsKey(COSName.RESOURCES))
         {
             imported.setResources(aPage.getResources());
-            LOGGER.info("Resources imported in Splitter");
+            LOGGER.log(Level.INFO, "Resources imported in Splitter");
         }
 
         List<PDAnnotation> annotations = imported.getAnnotations();

@@ -2,12 +2,12 @@ package de.code2be.pdfsplit;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.MemoryUsageSetting;
@@ -27,7 +27,7 @@ import de.code2be.pdfsplit.split.ISplitPageIdentifier;
 public class SmartSplitter
 {
 
-    private static final Logger LOGGER = Logger
+    private static final Logger LOGGER = System
             .getLogger(SmartSplitter.class.getName());
 
     /**
@@ -240,7 +240,7 @@ public class SmartSplitter
             }
             catch (Exception ex)
             {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             }
         }
     }
@@ -466,7 +466,7 @@ public class SmartSplitter
             }
             catch (Exception ex)
             {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             }
         }
 

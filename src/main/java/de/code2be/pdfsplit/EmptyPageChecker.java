@@ -1,8 +1,8 @@
 package de.code2be.pdfsplit;
 
 import java.awt.image.BufferedImage;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -17,7 +17,7 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 public class EmptyPageChecker
 {
 
-    private static final Logger LOGGER = Logger
+    private static final Logger LOGGER = System
             .getLogger(EmptyPageChecker.class.getName());
 
     /**
@@ -228,7 +228,7 @@ public class EmptyPageChecker
     {
         if (mDocument == null)
         {
-            LOGGER.log(Level.SEVERE, "Called with null document!");
+            LOGGER.log(Level.ERROR, "Called with null document!");
             return false;
         }
 
@@ -273,7 +273,7 @@ public class EmptyPageChecker
         }
         catch (Exception ex)
         {
-            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            LOGGER.log(Level.ERROR, ex.getMessage(), ex);
             // can not say that page is empty
             return false;
         }
