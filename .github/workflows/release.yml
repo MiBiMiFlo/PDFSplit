@@ -34,6 +34,12 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: false
         prerelease: false
+    - name: Get Name of Artifact
+        run: |
+            ARTIFACT_PATHNAME=$(ls target/pdfsplit*.zip | head -n 1)
+            ARTIFACT_NAME=$(basename $ARTIFACT_PATHNAME)
+            echo ::set-env name=ARTIFACT_NAME::${ARTIFACT_NAME}
+            echo ::set-env name=ARTIFACT_PATHNAME::${ARTIFACT_PATHNAME}
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
       id: upload-release-asset 
@@ -41,6 +47,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }} 
-        asset_path: ./target/pdfsplit.zip
+        asset_path: ${{ env.ARTIFACT_PATHNAME }}
         asset_name: pdfsplit-${{ steps.vars.outputs.tag }}.zip
         asset_content_type: application/zip
