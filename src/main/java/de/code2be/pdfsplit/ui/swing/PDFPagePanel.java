@@ -160,7 +160,7 @@ public class PDFPagePanel extends JComponent
         // something at all.
         if (curImg != null)
         {
-            mOldPageImage = mPageImage;
+            mOldPageImage = curImg;
         }
         revalidate();
         repaint();
