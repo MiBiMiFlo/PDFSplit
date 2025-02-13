@@ -171,7 +171,7 @@ public class PDFPagePanel extends JComponent
      * This method is called in a separate thread and performs the rendering of
      * the PDF page into an image.
      */
-    protected void doRenderImage()
+    private void doRenderImage()
     {
         BufferedImage img = null;
         Dimension prefSize = getPreferredSize();
